@@ -8,15 +8,21 @@ module pll_clk_debug (
     output  logic   debug_pll_clk,
 	output  logic   debug_HSOSC_clk,
 	output 	logic 	test_led,
-	output	logic	confirm_locked
+	output	logic	debug_derived_pll_clk
 );
+	logic pll_clk_internal;
+	
+	always_ff @(posedge pll_clk_internal) begin
+		if (~reset_n) 	debug_derived_pll_clk <= 1'b0;
+		else			debug_derived_pll_clk <= ~debug_derived_pll_clk;
+	end
 
     // Ex: request a 25.175 MHz pixel clock for VGA
     pll_clk PLL_CLK(
         .rst_n(reset_n),      // active-low reset to PLL
         .bypass(1'b0),   // 1 = bypass PLL (REF clocks out)
         .latch(1'b0),    // 1 = hold last output value if ICEGATE enabled
-        .clk_internal(),  // pixel clock (from OUTGLOBALB)
+        .clk_internal(pll_clk_internal),  // pixel clock (from OUTGLOBALB)
         .clk_external(debug_pll_clk),
 		.clk_HSOSC(debug_HSOSC_clk),
         .locked()    // PLL lock indicator
