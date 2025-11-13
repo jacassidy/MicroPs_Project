@@ -4,24 +4,25 @@
 // 11/8/2025
 
 module vga_controller #(
-    parameter vga_pkg::vga_params_t params = vga_pkg::VGA_640x480_60
+    parameter vga_pkg::vga_params_t params
 ) (
-    input  logic                                   reset_n,              // async, active-low
+    input   logic                                   reset_n,              // async, active-low
     // pixel addressing (for your renderer)
-    output logic [$clog2(params.h_visible)-1:0]    pixel_x_target_next,
-    output logic [$clog2(params.v_visible)-1:0]    pixel_y_target_next,
-    input  logic                                   pixel_value_next,     // 1=on, 0=off (next pixel)
+    output  logic [params.pixel_x_bits-1:0]         pixel_x_target_next,
+    output  logic [params.pixel_y_bits-1:0]         pixel_y_target_next,
+    input   logic                                   pixel_value_next,     // 1=on, 0=off (next pixel)
     // VGA pins
-    output logic                                   h_sync,
-    output logic                                   v_sync,
-    output logic                                   pixel_signal,         // gated with visible region
-    output logic                                   vga_clk,              // internal/global pixel clock (PLLOUTGLOBALB)
+    output  logic                                   h_sync,
+    output  logic                                   v_sync,
+    output  logic                                   pixel_signal,         // gated with visible region
+    output  logic                                   VGA_clk,              // internal/global pixel clock (PLLOUTGLOBALB)
+    output  logic                                   HSOSC_clk
     // optional debug outs (safe to send to pins)
-    output logic                                   debug_pll_clk,        // PLLOUTCOREB (ok to PIO)
-    output logic                                   debug_HSOSC_clk,      // raw HSOSC tap (optional)
-    output logic                                   pll_lock,
-    output logic                                   debug_v_visible,
-    output logic                                   debug_h_visible
+    // output logic                                   debug_pll_clk,        // PLLOUTCOREB (ok to PIO)
+    // output logic                                   debug_HSOSC_clk,      // raw HSOSC tap (optional)
+    // output logic                                   debug_pll_lock,
+    // output logic                                   debug_v_visible,
+    // output logic                                   debug_h_visible
 );
 
     // -------------------------------------------------------------------------
@@ -29,6 +30,8 @@ module vga_controller #(
     // -------------------------------------------------------------------------
     logic pll_clk_internal; // global clock for fabric (PLLOUTGLOBALB)
     logic pll_clk_external;     // local/core clock (PLLOUTCOREB)
+
+    logic pll_clk;
 
     pll_clk #(
         .CLKHF_DIV("0b00"),  // 48 MHz HSOSC
@@ -39,13 +42,12 @@ module vga_controller #(
         .rst_n       (reset_n),
         .clk_internal(pll_clk_internal),  // use this to clock your VGA logic
         .clk_external(pll_clk_external),      // use this if you want to drive a pin
-        .clk_HSOSC   (debug_HSOSC_clk),
+        .clk_HSOSC   (HSOSC_clk),
         .locked      (pll_lock)
     );
 
     // Expose clocks as requested
     assign vga_clk       = pll_clk_internal;
-    assign debug_pll_clk = pll_clk_external;
 
     // -------------------------------------------------------------------------
     // Synchronized reset release: hold counters in reset until PLL is locked
@@ -131,7 +133,11 @@ module vga_controller #(
     assign v_sync = params.v_sync_active_low ? ~vsync_pulse : vsync_pulse;
 
 
+    // debug
+    // assign debug_h_visible = in_h_vis;
+    // assign debug_v_visible = in_v_vis;
+    // assign debug_pll_clk = pll_clk_external;
+    // assign debug_HSOSC_clk = HSOSC_clk;
+    // assign debug_pll_lock = pll_lock;
 
-    assign debug_h_visible = in_h_vis;
-    assign debug_v_visible = in_v_vis;
 endmodule

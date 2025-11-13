@@ -6,9 +6,10 @@
 package game_state_pkg;
 
   typedef struct {
-    logic[9:0] screen[19:0];
+    // screen[x][y] : 20 rows, each 10 bits wide
+    logic [19:0] screen [9:0];
   } game_state_t;
 
-  localparam game_state_t blank_game_state = 0;
+  localparam game_state_t blank_game_state = '{default: '0};
 
-endpackage : vga_pkg
+endpackage : game_state_pkg

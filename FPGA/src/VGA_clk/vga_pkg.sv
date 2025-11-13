@@ -37,6 +37,9 @@ package vga_pkg;
     int pixels_x;
     int pixels_y;
 
+    int pixel_x_bits;
+    int pixel_y_bits;
+
   } vga_params_t;
 
 
@@ -76,6 +79,12 @@ package vga_pkg;
 
     t.h_ctr_bits      = $clog2(t.h_total);
     t.v_ctr_bits      = $clog2(t.v_total);
+
+    t.pixels_x        = h_visible;
+    t.pixels_y        = v_visible;
+
+    t.pixel_x_bits    = $clog2(t.pixels_x);
+    t.pixel_y_bits    = $clog2(t.pixels_y);
 
     return t;
   endfunction
