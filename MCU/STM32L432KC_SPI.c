@@ -50,11 +50,11 @@ uint8_t spiSendReceive(uint8_t send) {
 }
 
 void enable_cs(){
-  digitalWrite(SPI_CE, 0); //active low
+  digitalWrite(SPI_CE, 1); //active low
 }
 
 void disable_cs(){
-digitalWrite(SPI_CE, 1); //disactive high
+  digitalWrite(SPI_CE, 0); //disactive high
 }
 
 uint8_t spiwrite(uint8_t address, uint8_t val) {
@@ -62,7 +62,7 @@ uint8_t spiwrite(uint8_t address, uint8_t val) {
   uint8_t status = spiSendReceive(address);
   spiSendReceive(val);
   disable_cs();
-  return status; 
+  return status;
 }
 
 void configureSPIPins()
@@ -89,4 +89,3 @@ void configureSPIPins()
     GPIOB->AFR[0] |= _VAL2FLD(GPIO_AFRL_AFSEL4, 5);
     GPIOB->AFR[0] |= _VAL2FLD(GPIO_AFRL_AFSEL5, 5);
 }
-

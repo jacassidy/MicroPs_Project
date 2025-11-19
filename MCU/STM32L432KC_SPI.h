@@ -12,7 +12,7 @@ Date: 11/6/25
 #define SPI_SCK PB3
 #define SPI_MOSI PB5
 #define SPI_MISO PB4
-#define SPI_CE PB1
+#define SPI_CE PA11
 
 #include <stdint.h>
 #include <stm32l432xx.h>
@@ -32,6 +32,7 @@ void initSPI(int br, int cpol, int cpha);
 /* Transmits a character (1 byte) over SPI and returns the received character.
  *    -- send: the character to send over SPI
  *    -- return: the character received over SPI */
+
 uint8_t spiSendReceive(uint8_t send);
 
 void configureSPIPins();

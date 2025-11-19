@@ -23,4 +23,4 @@ Output/Debug/Obj/MicroPs_tetris/main.o: \
  /Users/noahfotenos/Desktop/E155-MicroPs/Project/MicroPs_Project/MCU/STM32L432KC_FLASH.h \
  /Users/noahfotenos/Desktop/E155-MicroPs/Project/MicroPs_Project/MCU/STM32L432KC_USART.h \
  /Users/noahfotenos/Desktop/E155-MicroPs/Project/MicroPs_Project/MCU/STM32L432KC_SPI.h \
- /Users/noahfotenos/Desktop/E155-MicroPs/Project/MicroPs_Project/MCU/usb.h
+ /Users/noahfotenos/Desktop/E155-MicroPs/Project/MicroPs_Project/MCU/random.h

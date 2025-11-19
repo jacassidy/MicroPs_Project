@@ -13,7 +13,7 @@
 #define SPI_SCK PB3
 #define SPI_MOSI PB5
 #define SPI_MISO PB4
-#define SPI_CE PB1
+#define SPI_CE PA11
 
 #define RESET_N PB0 // LED pin for blinking on Port B pin 3
 #define BUFF_LEN 32
