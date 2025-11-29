@@ -68,13 +68,17 @@ int main(void) {
     char request[BUFF_LEN] = "                  "; // initialize to known value
     int charIndex = 0;
     if((USART->ISR & USART_ISR_RXNE)) {
-      // Keep going until you get end of line character
-      while(charIndex < 8) {
-        // Wait for a complete request to be transmitted before processing
-        while(!(USART->ISR & USART_ISR_RXNE));
         char readCharecter = readChar(USART);
-        printf("%x", readCharecter);
         request[charIndex++] =  readCharecter;
+        if (readCharecter == 0xE0) {
+          while(!(USART->ISR & USART_ISR_RXNE));
+          char readCharecter = readChar(USART);
+          request[charIndex++] =  readCharecter;
+          }
+        if (readCharecter == 0xF0) {
+          while(!(USART->ISR & USART_ISR_RXNE));
+          char readCharecter = readChar(USART);
+          request[charIndex++] =  readCharecter;
       }
      printf("Received request: %s\n", request);
   }
