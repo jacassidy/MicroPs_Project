@@ -48,6 +48,7 @@ int main(void) {
 
   initRandomGenerator();
 
+  USART_TypeDef * USART = initUSART(USART1_ID, 11500);
 
   //getTemperatureData();
   int counter = 0;
@@ -62,13 +63,29 @@ int main(void) {
     //char temperature_string[32];
     //sprintf(temperature_string,"Temperature is %0.4f C", temperature);
 
+    // Wait for a complete request to be transmitted before processing
+
+    char request[BUFF_LEN] = "                  "; // initialize to known value
+    int charIndex = 0;
+    if((USART->ISR & USART_ISR_RXNE)) {
+      // Keep going until you get end of line character
+      while(charIndex < 8) {
+        // Wait for a complete request to be transmitted before processing
+        while(!(USART->ISR & USART_ISR_RXNE));
+        char readCharecter = readChar(USART);
+        printf("%x", readCharecter);
+        request[charIndex++] =  readCharecter;
+      }
+     printf("Received request: %s\n", request);
+  }
+
     // Update string with current LED state
     counter += 1;
     uint32_t randnum = getRandomNumber();
-    printf("%d",randnum);
+    //printf("%d",randnum);
     enable_cs();
     spiSendReceive(randnum & 0xFF);
     disable_cs();
-    delay_millis(TIM15, 5000);
+    //delay_millis(TIM15, 5000);
     }
 }

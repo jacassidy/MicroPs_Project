@@ -9,6 +9,7 @@
 #define MAIN_H
 
 #include "STM32L432KC.h"
+#include "STM32L432KC_USART.h"
 
 #define SPI_SCK PB3
 #define SPI_MOSI PB5
