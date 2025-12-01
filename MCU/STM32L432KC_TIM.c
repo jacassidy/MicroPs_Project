@@ -3,6 +3,8 @@
 
 #include "STM32L432KC_TIM.h"
 #include "STM32L432KC_RCC.h"
+#include <stdbool.h>
+
 
 void initTIM(TIM_TypeDef * TIMx){
   // Set prescaler to give 1 ms time base
@@ -24,3 +26,15 @@ void delay_millis(TIM_TypeDef * TIMx, uint32_t ms){
 
   while(!(TIMx->SR & 1)); // Wait for UIF to go high
 }
+
+void begin_timer(TIM_TypeDef * TIMx, uint32_t ms){
+  TIMx->ARR = ms;// Set timer max count
+  TIMx->EGR |= 1;     // Force update
+  TIMx->SR &= ~(0x1); // Clear UIF
+  TIMx->CNT = 0;      // Reset count
+}
+
+bool check_timer(TIM_TypeDef * TIMx){
+  return (TIMx->SR & 1); // Wait for UIF to go high
+}
+

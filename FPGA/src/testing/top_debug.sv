@@ -8,8 +8,17 @@ module top_debug #(
     )(
         output  logic       h_sync,
         output  logic       v_sync,
-        output  logic       pixel_signal
+        output  logic       pixel_signal,
+
+        input   logic       sck, 
+        input   logic       sdi,
+        output  logic       sdo,
+        input   logic       ce
     );
+
+    // SPI signals
+
+    logic [7:0] spi_data;
 
     // VGA Signals
     logic   HSOSC_clk, VGA_clk;
@@ -22,6 +31,8 @@ module top_debug #(
     logic VGA_new_frame_ready, GAME_new_frame_ready;
     
     game_state_pkg::game_state_t GAME_next_frame, VGA_frame;
+
+    logic [3:0] GAME_frame_select;
 
     ////----MODULES----////
 
@@ -47,6 +58,11 @@ module top_debug #(
     game_decoder #(.params(params)) Game_Decoder(.VGA_new_frame_ready, .VGA_frame, .pixel_x_target_next, .pixel_y_target_next, 
         .pixel_value_next, .v_sync);
 
-    game_encoder Game_Encoder(.GAME_new_frame_ready, .GAME_next_frame, .HSOSC_clk);
+    game_encoder Game_Encoder(.GAME_new_frame_ready(), .GAME_next_frame, .GAME_frame_select(spi_data[3:0]));
+
+    spi SPI(.reset(reset_led), .sck, .sdi, .sdo, .ce, .data(spi_data));
+
+    // Once new data has come it and chip enable goes low then assert new frame ready
+    assign GAME_new_frame_ready = ~ce;
 
 endmodule  
