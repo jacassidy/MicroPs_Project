@@ -60,6 +60,8 @@ module top_debug #(
 
     game_encoder Game_Encoder(.GAME_new_frame_ready(), .GAME_next_frame, .GAME_frame_select(spi_data[3:0]));
 
+    game_executioner(.Game_State)
+
     spi SPI(.reset(reset_led), .sck, .sdi, .sdo, .ce, .data(spi_data));
 
     // Once new data has come it and chip enable goes low then assert new frame ready

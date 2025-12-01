@@ -316,20 +316,21 @@ int main(void) {
         if (keyboard_get_key_state('W')) {
           // W has been pressed at least once
           // do something for forward movement, etc.
-          printf("W Key down");
+          printf("W Key down\n");
+           // // Update string with current LED state
+          // counter += 1;
+          uint32_t randnum = getRandomNumber();
+          //printf("%d",randnum);
+          enable_cs();
+          spiSendReceive(randnum & 0xFF);
+          disable_cs();
         }
 
         begin_timer(TIM15, 1000);
       }
 
 
-      // // Update string with current LED state
-      // counter += 1;
-      // uint32_t randnum = getRandomNumber();
-      // //printf("%d",randnum);
-      // enable_cs();
-      // spiSendReceive(randnum & 0xFF);
-      // disable_cs();
+     
 
       //delay_millis(TIM16, 10);
     }

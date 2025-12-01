@@ -10,6 +10,11 @@ package game_state_pkg;
     logic [19:0] screen [9:0];
   } game_state_t;
 
+  typedef struct {
+    // screen[x][y] : 20 rows, each 10 bits wide
+    logic [5:0] heights [9:0];
+  } fixed_game_state_heights_t;
+
   localparam game_state_t blank_game_state = '{default: '0};
 
 endpackage : game_state_pkg
