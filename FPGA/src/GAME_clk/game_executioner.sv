@@ -24,33 +24,70 @@ module game_executioner(
     );
 
     logic floating_piece;
-    logic active_piece_toutching;
+    logic active_piece_toutching_bottom;
+    logic active_piece_toutching_left;
+    logic active_piece_toutching_right;
     logic clearing_line;
     logic no_piece;
+
+    // assign active_piece_toutching_left = 1'b0;
+    // assign active_piece_toutching_right = 1'b0;
 
     tetris_pkg::active_piece_t      active_piece;
 
     tetris_pkg::active_piece_grid_t active_piece_grid;
     game_state_pkg::game_state_t    GAME_fixed_state;
 
-    // assign no_piece = ~floating_piece & ~active_piece_toutching;
-    flopR #(.WIDTH(1)) No_Piece_flop(.clk(game_clk), .reset, .D(active_piece_toutching), .Q(no_piece));
+
+
+    // assign no_piece = ~floating_piece & ~active_piece_toutching_bottom;
+    flopR #(.WIDTH(1)) No_Piece_flop(.clk(game_clk), .reset, .D(active_piece_toutching_bottom), .Q(no_piece));
 
     // a piece is floating when the active piece is not toutching, unless clearing (no piece is active at this time)
-    flopRF #(.WIDTH(1)) Floating_Piece(.clk(game_clk), .reset, .flush(active_piece_toutching), .D(1'b1), .Q(floating_piece));
+    flopRF #(.WIDTH(1)) Floating_Piece(.clk(game_clk), .reset, .flush(active_piece_toutching_bottom), .D(1'b1), .Q(floating_piece));
 
-    piece_land_checker Piece_Land_Chcecker(.no_piece, .active_piece_grid, .GAME_fixed_state, .active_piece_toutching);
+    piece_land_checker Piece_Land_Chcecker(.no_piece, .active_piece_grid, .GAME_fixed_state, .active_piece_toutching(active_piece_toutching_bottom));
+
+    // rotated game
+
+    localparam int GRID                     = 4;
+    localparam int FIXED_STATE_WIDTH_IN     = 10;  // columns
+    localparam int FIXED_STATE_HEIGHT_IN    = 20;  // rows
+
+    logic [3:0] active_piece_grid_piece_ccw [3:0];
+    logic [3:0] active_piece_grid_piece_cw  [3:0];
+
+    logic [$clog2(FIXED_STATE_HEIGHT_IN)-1:0] piece_x_ccw;
+    logic [$clog2(FIXED_STATE_WIDTH_IN) -1:0] piece_y_ccw;
+
+    logic [$clog2(FIXED_STATE_HEIGHT_IN)-1:0] piece_x_cw;
+    logic [$clog2(FIXED_STATE_WIDTH_IN) -1:0] piece_y_cw;
+
+    logic [FIXED_STATE_WIDTH_IN -1:0] GAME_fixed_state_screen_ccw [FIXED_STATE_HEIGHT_IN-1:0];
+    logic [FIXED_STATE_WIDTH_IN -1:0] GAME_fixed_state_screen_cw  [FIXED_STATE_HEIGHT_IN-1:0];
+
+    piece_collision_checker #(.FIXED_STATE_WIDTH(20), .FIXED_STATE_HEIGHT(10), .GRID(4)) LEFT_piece_collision_checker(.no_piece, 
+        .active_piece_grid_piece(active_piece_grid_piece_ccw), .piece_y(piece_y_ccw), .piece_x(piece_x_ccw), 
+        .GAME_fixed_state_screen(GAME_fixed_state_screen_ccw), .active_piece_toutching(active_piece_toutching_left));
+
+    piece_collision_checker #(.FIXED_STATE_WIDTH(20), .FIXED_STATE_HEIGHT(10), .GRID(4)) RIGHT_piece_collision_checker(.no_piece, 
+        .active_piece_grid_piece(active_piece_grid_piece_cw), .piece_y(piece_y_cw), .piece_x(piece_x_cw), 
+        .GAME_fixed_state_screen(GAME_fixed_state_screen_cw), .active_piece_toutching(active_piece_toutching_right));
+
+    rotate_game Rotate_Game (.active_piece_grid, .GAME_fixed_state, .active_piece_grid_piece_ccw, .active_piece_grid_piece_cw,
+        .piece_x_ccw, .piece_y_ccw, .piece_x_cw, .piece_y_cw, .GAME_fixed_state_screen_ccw, .GAME_fixed_state_screen_cw);
+
 
     // a new piece is asserted when the line isnt being cleared and thee isnt a floating piece the frame before, once you insert a new piece, you no longer insert a new piece
     assign inset_new_piece = no_piece;
 
-    flopRFS #(.WIDTH(5)) Gravity(.clk(game_clk), .reset, .flush(inset_new_piece | clearing_line), .stall(active_piece_toutching), .D(active_piece.y + 1), .Q(active_piece.y));
+    flopRFS #(.WIDTH(5)) Gravity(.clk(game_clk), .reset, .flush(inset_new_piece | clearing_line), .stall(active_piece_toutching_bottom), .D(active_piece.y + 1), .Q(active_piece.y));
 
     piece_decoder Piece_Decoder(.active_piece, .active_piece_grid);
 
 	always_ff @(posedge game_clk) begin
 		if (reset)  GAME_fixed_state.screen <= game_state_pkg::blank_game_state.screen;
-        else if (active_piece_toutching)        
+        else if (active_piece_toutching_bottom)        
                     GAME_fixed_state.screen <= GAME_state.screen;
 	end
 	
@@ -62,12 +99,12 @@ module game_executioner(
 
     synchronizer Mv_clk_delay(.clk(clk), .raw_input(move_clk), .synchronized_value(stall_move_clk));
 
-    always_ff @(posedge stall_move_clk) begin //
+    always_ff @(posedge stall_move_clk) begin // TODO x being reset to early since stall move clk is based off spi transactions
         if (reset | inset_new_piece) active_piece.x <= new_piece.x;
         else begin
             if (move_valid) begin
-                if (move == tetris_pkg::CMD_LEFT)  active_piece.x <= active_piece.x - 1;
-                if (move == tetris_pkg::CMD_RIGHT) active_piece.x <= active_piece.x + 1;
+                if (~active_piece_toutching_left  & move == tetris_pkg::CMD_LEFT)  active_piece.x <= active_piece.x - 1;
+                if (~active_piece_toutching_right & move == tetris_pkg::CMD_RIGHT) active_piece.x <= active_piece.x + 1;
             end
         end
     end
@@ -76,14 +113,16 @@ module game_executioner(
 
     // assign sig1 = active_piece.x;
     // assign sig2 = active_piece.y;
-    // assign sig3 = floating_piece;
-    // assign sig4 = active_piece_toutching;
-    // assign sig5 = clearing_line;
-    // assign sig6 = no_piece;
+    assign sig1 = floating_piece;
+    assign sig2 = active_piece_toutching_bottom;
+    assign sig3 = active_piece_toutching_left;
+    assign sig4 = active_piece_toutching_right;
+    assign sig5 = clearing_line;
+    assign sig6 = no_piece;
 
-    assign sig1 = inset_new_piece;
-    assign sig2 = reset;
-    assign sig3 = stall_move_clk;
-    assign sig4 = move_clk;
+    // assign sig1 = inset_new_piece;
+    // assign sig2 = reset;
+    // assign sig3 = stall_move_clk;
+    // assign sig4 = move_clk;
 
 endmodule
