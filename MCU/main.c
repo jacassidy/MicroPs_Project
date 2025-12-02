@@ -174,7 +174,7 @@ void keyboard_update_state(const uint8_t *request, int req_len) {
         is_break = 0;
         temp[0] = request[0];
         tlen    = 1;
-
+        printf("key pressed: %x %x %x\n",request[2], request[1], request[0]);
     } else if (req_len == 2) {
         if (request[0] == 0xE0) {
             // Extended make: [0xE0, code]
@@ -182,16 +182,19 @@ void keyboard_update_state(const uint8_t *request, int req_len) {
             temp[0] = 0xE0;
             temp[1] = request[1];
             tlen    = 2;
+            printf("Key released: %x %x %x\n",request[2], request[1], request[0]);
         } else if (request[0] == 0xF0) {
             // Normal break: [0xF0, code]
             is_break = 1;
             temp[0]  = request[1];  // decode like a normal 1-byte make
             tlen     = 1;
+            printf("Extneded key pressed: %x %x %x\n",request[2], request[1], request[0]);
         } else {
             // Fallback: treat as make of last byte
             is_break = 0;
             temp[0]  = request[req_len - 1];
             tlen     = 1;
+            printf("error should not occur 0: %x %x %x\n",request[2], request[1], request[0]);
         }
 
     } else if (req_len == 3) {
@@ -201,17 +204,20 @@ void keyboard_update_state(const uint8_t *request, int req_len) {
             temp[0]  = 0xE0;
             temp[1]  = request[2];
             tlen     = 2;
+            printf("Extneded key released: %x %x %x\n",request[2], request[1], request[0]);
         } else {
             // Fallback: best effort – treat last as simple code
             is_break = 0;
             temp[0]  = request[req_len - 1];
             tlen     = 1;
+            printf("error should not occur 1: %x %x %x\n",request[2], request[1], request[0]);
         }
     } else {
         // Unexpected length, best-effort decode last byte
         is_break = 0;
         temp[0]  = request[req_len - 1];
         tlen     = 1;
+        printf("error should not occur 2: %x %x %x\n",request[2], request[1], request[0]);
     }
 
     // --------- Map to a printable "key" using your existing decoder ---------
@@ -253,13 +259,13 @@ void scanKeyboard(){
       if (readCharecter == 0xE0) {
         // extend key singal, get next
         while(!(USART->ISR & USART_ISR_RXNE));
-        char readCharecter = readChar(USART);
+        readCharecter = readChar(USART);
         request[req_len++] =  readCharecter;
         }
       if (readCharecter == 0xF0) {
         // Release key signal, get next
         while(!(USART->ISR & USART_ISR_RXNE));
-        char readCharecter = readChar(USART);
+        readCharecter = readChar(USART);
         request[req_len++] =  readCharecter;
       }
 
@@ -315,38 +321,39 @@ int main(void) {
       if (check_timer(TIM15)){
         int key_value     = 0;
         bool key_pressed  = false;
-        if (keyboard_get_key_state('W')) {
+        if (keyboard_get_key_state('^')) {
           key_value = 0;
           key_pressed = true;
-        }else if(keyboard_get_key_state('S')) {
+        }else if(keyboard_get_key_state('v')) {
           key_value = 1;
           key_pressed = true;
-        }else if(keyboard_get_key_state('A')) {
+        }else if(keyboard_get_key_state('<')) {
           key_value = 2;
           key_pressed = true;
-        }else if(keyboard_get_key_state('D')) {
+        }else if(keyboard_get_key_state('>')) {
           key_value = 3;
           key_pressed = true;
         }
 
-       
-        // W has been pressed at least once
-        // do something for forward movement, etc.
-        printf("W Key down\n");
+        printf("keyvalue  %d \n",key_value);
+        printf("keypressed   %d \n",key_pressed);
+        printf("counter   %d \n",counter);
+
          // // Update string with current LED state
-        // counter += 1;
-        uint32_t randnum = getRandomNumber();
-        while ((randnum & 0xFF) == 8){
-          randnum = getRandomNumber();
+        counter += 1;
+        if (key_pressed) {
+          uint32_t randnum = getRandomNumber();
+          while ((randnum & 0x07) == 7){
+            randnum = getRandomNumber();
+          }
+          //printf("%d",randnum);
+          enable_cs();
+          spiSendReceive(0xFF & ((uint8_t)key_pressed << (2 + 3) | ((uint8_t)(randnum& 0x07) << 2) | (uint8_t)key_value));
+          disable_cs();
         }
-        //printf("%d",randnum);
-        enable_cs();
-        spiSendReceive(0xFF & ((uint8_t)key_pressed << (2 + 3) | ((uint8_t)randnum << 2) | (uint8_t)key_value));
-        disable_cs();
+
+        begin_timer(TIM15, 1000);
       }
-
-
-      begin_timer(TIM15, 1000);
     }
 
       //delay_millis(TIM16, 10);
