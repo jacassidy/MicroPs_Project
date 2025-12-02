@@ -7,12 +7,12 @@ module piece_land_checker(
         input   logic                               no_piece,
         input   tetris_pkg::active_piece_grid_t     active_piece_grid,
         input   game_state_pkg::game_state_t        GAME_fixed_state,
-        output  logic                               active_piece_toutching,
+        output  logic                               active_piece_toutching
 
-        output  logic [8:0]                     sig3,
-        output  logic [8:0]                     sig4,
-        output  logic [8:0]                     sig5,
-        output  logic [8:0]                     sig6
+        // output  logic [8:0]                     sig3,
+        // output  logic [8:0]                     sig4,
+        // output  logic [8:0]                     sig5,
+        // output  logic [8:0]                     sig6
     );
 
     localparam int BOARD_WIDTH   = 10;
@@ -96,9 +96,14 @@ module piece_land_checker(
         active_piece_toutching = active_piece_toutching & ~no_piece;
     end
 
-    assign sig3 = signals[0];
-    assign sig4 = signals[1];
-    assign sig5 = signals[2];
-    assign sig6 = signals[3];
+    // assign sig3 = signals[0];
+    // assign sig4 = signals[1];
+    // assign sig5 = signals[2];
+    // assign sig6 = signals[3];
+
+    // assign sig3 = piece_bottom_idx[0];
+    // assign sig4 = piece_bottom_idx[1];
+    // assign sig5 = piece_bottom_idx[2];
+    // assign sig6 = piece_bottom_idx[3];
 
 endmodule
