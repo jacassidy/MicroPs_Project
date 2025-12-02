@@ -4,7 +4,10 @@
 // 11/13/2025
 
 module top_debug #(
-        parameter vga_pkg::vga_params_t params = vga_pkg::VGA_640x480_60
+        parameter vga_pkg::vga_params_t params = vga_pkg::VGA_640x480_60,
+        parameter int TELEMETRY_NUM_SIGNALS             = 2,    // 7 lines
+        parameter int TELEMETRY_VALUE_WIDTH             = 8,
+        parameter int TELEMETRY_BASE                    = 16
     )(
         input   logic       reset_n,
         output  logic       h_sync,
@@ -25,6 +28,8 @@ module top_debug #(
     logic [7:0] spi_data;
     logic clk_divided;
 
+    logic [TELEMETRY_VALUE_WIDTH-1:0]    telemetry_values [TELEMETRY_NUM_SIGNALS];
+
     logic game_clk;
     
     // SPI signals
@@ -33,8 +38,6 @@ module top_debug #(
     // VGA Signals
     logic   HSOSC_clk, VGA_clk;
     logic   pixel_value_next;
-
-    logic[8:0] clk_count, sig1, sig2, sig3, sig4, sig5, sig6;
 
     logic[params.pixel_x_bits-1:0] pixel_x_target_next;
     logic[params.pixel_y_bits-1:0] pixel_y_target_next;
@@ -46,7 +49,14 @@ module top_debug #(
 
     logic [3:0] GAME_frame_select;
 
+    logic synchronized_value, external_clk_sync_debounce;
+
+    logic[7:0] clk_count;
+
     ////----MODULES----////
+
+    assign telemetry_values[0] = clk_count;
+    assign telemetry_values[1] = spi_data;
 
     vga_controller #(
         .params(params)
@@ -67,21 +77,18 @@ module top_debug #(
     state_manager State_Manager(.reset(1'b0), .VGA_new_frame_ready, .GAME_new_frame_ready, 
         .GAME_next_frame, .VGA_frame);
 
-    game_decoder #(.params(params)) Game_Decoder(.VGA_new_frame_ready, .VGA_frame, .pixel_x_target_next, .pixel_y_target_next, 
-        .pixel_value_next, .v_sync,
-        .sig0(clk_count),   // logic [8:0]
-        .sig1,
-        .sig2,
-        .sig3,
-        .sig4,
-        .sig5,
-        .sig6
+    game_decoder #(
+            .params(params), 
+            .TELEMETRY_NUM_SIGNALS(TELEMETRY_NUM_SIGNALS),    
+            .TELEMETRY_VALUE_WIDTH(TELEMETRY_VALUE_WIDTH),
+            .TELEMETRY_BASE(TELEMETRY_BASE)
+        ) Game_Decoder(
+            .VGA_new_frame_ready, .VGA_frame, .pixel_x_target_next, .pixel_y_target_next, 
+            .pixel_value_next, .v_sync, .telemetry_values
         );
 
     //game_encoder Game_Encoder(.GAME_new_frame_ready(), .GAME_next_frame, .GAME_frame_select(spi_data[3:0]));
     tetris_pkg::active_piece_t new_piece;
-
-    assign sig6 = spi_data;
 
     always_comb begin
         unique case (spi_data[4:2])
@@ -96,26 +103,27 @@ module top_debug #(
         endcase
     end
 
-    game_executioner Game_Executioner(.reset(~reset_n), 
-        .move_clk(spi_data_valid), 
-		.clk(HSOSC_clk),
-        .game_clk, 
-        .move(tetris_pkg::command_t'(spi_data[1:0])), 
-        .move_valid(spi_data[5]), 
-        .new_piece, 
-        .GAME_state(GAME_next_frame),
-        .sig1,
-        .sig2,
-        .sig3,
-        .sig4,
-        .sig5,
-        .sig6());
+    game_executioner #(
+            .TELEMETRY_NUM_SIGNALS(TELEMETRY_NUM_SIGNALS),    
+            .TELEMETRY_VALUE_WIDTH(TELEMETRY_VALUE_WIDTH),
+            .TELEMETRY_BASE(TELEMETRY_BASE)
+        )Game_Executioner(
+            .reset(~reset_n), 
+            .move_clk(spi_data_valid), 
+            .clk(HSOSC_clk),
+            .game_clk, 
+            .move(tetris_pkg::command_t'(spi_data[1:0])), 
+            .move_valid(spi_data[5]), 
+            .new_piece, 
+            .GAME_state(GAME_next_frame),
+            .telemetry_values()
+            );
 
     spi SPI(.reset(~reset_n), .clk(HSOSC_clk), .sck, .sdi, .sdo, .ce, .clear(invalidate_spi_data), .data(spi_data), .data_valid(spi_data_valid));
 
     synchronizer SPI_Invalidator(.clk(HSOSC_clk), .raw_input(spi_data_valid), .synchronized_value(invalidate_spi_data));
 
-    logic synchronized_value, external_clk_sync_debounce;
+    
     // synchronize value
     synchronizer Synchronizer (HSOSC_clk, external_clk_raw, synchronized_value);
 

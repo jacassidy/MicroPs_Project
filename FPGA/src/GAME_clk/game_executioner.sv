@@ -3,24 +3,23 @@
 // kacassidy@hmc.edu
 // 12/1/2025
 
-module game_executioner(
-        input   logic                           reset,
-        input   logic                           clk,
-        input   logic                           move_clk,
-        input   logic                           move_valid,
-        input   logic                           game_clk,
+module game_executioner #(
+    parameter int                                   TELEMETRY_NUM_SIGNALS,    
+    parameter int                                   TELEMETRY_VALUE_WIDTH,
+    parameter int                                   TELEMETRY_BASE
+)(
+        input   logic                               reset,
+        input   logic                               clk,
+        input   logic                               move_clk,
+        input   logic                               move_valid,
+        input   logic                               game_clk,
 
-        input   tetris_pkg::command_t           move,
-        input   tetris_pkg::active_piece_t      new_piece,
+        input   tetris_pkg::command_t               move,
+        input   tetris_pkg::active_piece_t          new_piece,
 
-        output  game_state_pkg::game_state_t    GAME_state,
+        output  game_state_pkg::game_state_t        GAME_state,
 
-        output  logic [8:0]                     sig1,
-        output  logic [8:0]                     sig2,
-        output  logic [8:0]                     sig3,
-        output  logic [8:0]                     sig4,
-        output  logic [8:0]                     sig5,
-        output  logic [8:0]                     sig6
+        output  logic [TELEMETRY_VALUE_WIDTH-1:0]    telemetry_values [TELEMETRY_NUM_SIGNALS]
     );
 
     logic floating_piece;
@@ -46,7 +45,7 @@ module game_executioner(
     // a piece is floating when the active piece is not toutching, unless clearing (no piece is active at this time)
     flopRF #(.WIDTH(1)) Floating_Piece(.clk(game_clk), .reset, .flush(active_piece_toutching_bottom), .D(1'b1), .Q(floating_piece));
 
-    piece_land_checker Piece_Land_Chcecker(.no_piece, .active_piece_grid, .GAME_fixed_state, .active_piece_toutching(active_piece_toutching_bottom));
+    // piece_land_checker Piece_Land_Chcecker(.no_piece, .active_piece_grid, .GAME_fixed_state, .active_piece_toutching(active_piece_toutching_bottom));
 
     // rotated game
 
@@ -66,16 +65,16 @@ module game_executioner(
     logic [FIXED_STATE_WIDTH_IN -1:0] GAME_fixed_state_screen_ccw [FIXED_STATE_HEIGHT_IN-1:0];
     logic [FIXED_STATE_WIDTH_IN -1:0] GAME_fixed_state_screen_cw  [FIXED_STATE_HEIGHT_IN-1:0];
 
-    piece_collision_checker #(.FIXED_STATE_WIDTH(20), .FIXED_STATE_HEIGHT(10), .GRID(4)) LEFT_piece_collision_checker(.no_piece, 
-        .active_piece_grid_piece(active_piece_grid_piece_ccw), .piece_y(piece_y_ccw), .piece_x(piece_x_ccw), 
-        .GAME_fixed_state_screen(GAME_fixed_state_screen_ccw), .active_piece_toutching(active_piece_toutching_left));
+    // piece_collision_checker #(.FIXED_STATE_WIDTH(20), .FIXED_STATE_HEIGHT(10), .GRID(4)) LEFT_piece_collision_checker(.no_piece, 
+    //     .active_piece_grid_piece(active_piece_grid_piece_ccw), .piece_y(piece_y_ccw), .piece_x(piece_x_ccw), 
+    //     .GAME_fixed_state_screen(GAME_fixed_state_screen_ccw), .active_piece_toutching(active_piece_toutching_left));
 
-    piece_collision_checker #(.FIXED_STATE_WIDTH(20), .FIXED_STATE_HEIGHT(10), .GRID(4)) RIGHT_piece_collision_checker(.no_piece, 
-        .active_piece_grid_piece(active_piece_grid_piece_cw), .piece_y(piece_y_cw), .piece_x(piece_x_cw), 
-        .GAME_fixed_state_screen(GAME_fixed_state_screen_cw), .active_piece_toutching(active_piece_toutching_right));
+    // piece_collision_checker #(.FIXED_STATE_WIDTH(20), .FIXED_STATE_HEIGHT(10), .GRID(4)) RIGHT_piece_collision_checker(.no_piece, 
+    //     .active_piece_grid_piece(active_piece_grid_piece_cw), .piece_y(piece_y_cw), .piece_x(piece_x_cw), 
+    //     .GAME_fixed_state_screen(GAME_fixed_state_screen_cw), .active_piece_toutching(active_piece_toutching_right));
 
-    rotate_game Rotate_Game (.active_piece_grid, .GAME_fixed_state, .active_piece_grid_piece_ccw, .active_piece_grid_piece_cw,
-        .piece_x_ccw, .piece_y_ccw, .piece_x_cw, .piece_y_cw, .GAME_fixed_state_screen_ccw, .GAME_fixed_state_screen_cw);
+    // rotate_game Rotate_Game (.active_piece_grid, .GAME_fixed_state, .active_piece_grid_piece_ccw, .active_piece_grid_piece_cw,
+    //     .piece_x_ccw, .piece_y_ccw, .piece_x_cw, .piece_y_cw, .GAME_fixed_state_screen_ccw, .GAME_fixed_state_screen_cw);
 
 
     // a new piece is asserted when the line isnt being cleared and thee isnt a floating piece the frame before, once you insert a new piece, you no longer insert a new piece
@@ -113,12 +112,12 @@ module game_executioner(
 
     // assign sig1 = active_piece.x;
     // assign sig2 = active_piece.y;
-    assign sig1 = floating_piece;
-    assign sig2 = active_piece_toutching_bottom;
-    assign sig3 = active_piece_toutching_left;
-    assign sig4 = active_piece_toutching_right;
-    assign sig5 = clearing_line;
-    assign sig6 = no_piece;
+    assign telemetry_values[0] = floating_piece;
+    assign telemetry_values[1] = active_piece_toutching_bottom;
+    assign telemetry_values[2] = active_piece_toutching_left;
+    assign telemetry_values[3] = active_piece_toutching_right;
+    assign telemetry_values[4] = clearing_line;
+    assign telemetry_values[5] = no_piece;
 
     // assign sig1 = inset_new_piece;
     // assign sig2 = reset;
