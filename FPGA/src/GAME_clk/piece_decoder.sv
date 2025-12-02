@@ -10,7 +10,7 @@ module piece_decoder (
     import tetris_pkg::*;
 
   // 4x4 matrix type: [row][col], row 0 = top, col 0 = left
-  typedef logic piece_matrix_t [3:0][3:0];
+  typedef logic [3:0] piece_matrix_t [3:0];
 
   // ---------------------------------------------------------------------------
   // Base (ROT_0) shapes as 4x4 matrices (constants).
@@ -75,12 +75,12 @@ module piece_decoder (
   // Pure combinational decode + rotation + packing
   // ---------------------------------------------------------------------------
   always_comb begin
-    int r, c;
+    int y, x, r, c;
 
     // Default: clear base_matrix
-    for (r = 0; r < 4; r++) begin
-      for (c = 0; c < 4; c++) begin
-        base_matrix[r][c] = 1'b0;
+    for (y = 0; y < 4; y++) begin
+      for (x = 0; x < 4; x++) begin
+        base_matrix[x][y] = 1'b0;
       end
     end
 
@@ -96,27 +96,34 @@ module piece_decoder (
       default: /* keep zeros */;
     endcase
 
-    // Apply rotation (combinational, no functions)
     for (r = 0; r < 4; r++) begin
       for (c = 0; c < 4; c++) begin
+          x = 3-c;
+          y = 3-r;
+          rotated[x][y] = base_matrix[r][c];
+      end
+    end
+    base_matrix = rotated;
+
+    // Apply rotation (combinational, no functions)
+    for (y = 0; y < 4; y++) begin
+      for (x = 0; x < 4; x++) begin
         unique case (active_piece.rotation)
-          ROT_0:   rotated[r][c] = base_matrix[r][c];
-          // 90° clockwise: (r,c) <- (3-c, r)
-          ROT_90:  rotated[r][c] = base_matrix[3-c][r];
-          // 180°: (r,c) <- (3-r,3-c)
-          ROT_180: rotated[r][c] = base_matrix[3-r][3-c];
-          // 270° clockwise: (r,c) <- (c,3-r)
-          ROT_270: rotated[r][c] = base_matrix[c][3-r];
-          default: rotated[r][c] = base_matrix[r][c];
+          ROT_0:   rotated[x][y] = base_matrix[x][y];
+          // 90Â° clockwise: (y,x) <- (3-x, y)
+          ROT_90:  rotated[x][y] = base_matrix[y][3-x];
+          // 180Â°: (y,x) <- (3-y,3-x)
+          ROT_180: rotated[x][y] = base_matrix[3-x][3-y];
+          // 270Â° clockwise: (y,x) <- (x,3-y)
+          ROT_270: rotated[x][y] = base_matrix[y][3-x];
+          default: rotated[x][y] = base_matrix[x][y];
         endcase
       end
     end
 
-    // Pack rotated rows into active_piece_grid.piece[r][3:0] = {right..left}
-    for (r = 0; r < 4; r++) begin
-      active_piece_grid.piece[r] = {
-        rotated[r][3], rotated[r][2], rotated[r][1], rotated[r][0]
-      };
+    // Pack rotated rows into active_piece_grid.piece[y][3:0] = {right..left}
+    for (x = 0; x < 4; x++) begin
+      active_piece_grid.piece = rotated;
     end
 
     // Top-left of the 4x4 grid in board coordinates

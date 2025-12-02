@@ -11,7 +11,14 @@ module game_executioner(
         input   tetris_pkg::command_t           move,
         input   tetris_pkg::active_piece_t      new_piece,
 
-        output  game_state_pkg::game_state_t    GAME_state
+        output  game_state_pkg::game_state_t    GAME_state,
+
+        output  logic [8:0]                     sig1,
+        output  logic [8:0]                     sig2,
+        output  logic [8:0]                     sig3,
+        output  logic [8:0]                     sig4,
+        output  logic [8:0]                     sig5,
+        output  logic [8:0]                     sig6
     );
 
     logic floating_piece;
@@ -29,7 +36,11 @@ module game_executioner(
     // a piece is floating when the active piece is not toutching, unless clearing (no piece is active at this time)
     flopRF #(.WIDTH(1)) Floating_Piece(.clk(game_clk), .reset, .flush(active_piece_toutching), .D(1'b1), .Q(floating_piece));
 
-    piece_land_checker Piece_Land_Chcecker(.no_piece, .active_piece_grid, .GAME_fixed_state, .active_piece_toutching);
+    piece_land_checker Piece_Land_Chcecker(.no_piece, .active_piece_grid, .GAME_fixed_state, .active_piece_toutching,
+        .sig3,
+        .sig4,
+        .sig5,
+        .sig6);
 
     // a new piece is asserted when the line isnt being cleared and thee isnt a floating piece the frame before, once you insert a new piece, you no longer insert a new piece
     assign inset_new_piece = no_piece;
@@ -50,5 +61,8 @@ module game_executioner(
                         .Q({active_piece.x, active_piece.rotation,  active_piece.piece_type}));
 
     blit_piece Blit_Piece(.base_state(GAME_fixed_state), .active_piece_grid, .out_state(GAME_state));
+
+    assign sig1 = active_piece.x;
+    assign sig2 = active_piece.y;
 
 endmodule

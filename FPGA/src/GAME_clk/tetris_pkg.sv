@@ -41,7 +41,7 @@ package tetris_pkg;
     t.piece_type    = piece;
     t.rotation      = rotation;
     t.y             = 0;
-    t.x             = 3;
+    t.x             = 0;
 
     return t;
   endfunction

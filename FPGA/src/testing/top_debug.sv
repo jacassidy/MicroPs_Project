@@ -16,7 +16,7 @@ module top_debug #(
         output  logic       sdo,
         input   logic       ce,
 
-        input   logic       external_clk
+        input   logic       external_clk_raw
     );
 
     // SPI signals
@@ -24,9 +24,13 @@ module top_debug #(
     logic [7:0] spi_data;
     logic clk_divided;
 
+    logic game_clk;
+
     // VGA Signals
     logic   HSOSC_clk, VGA_clk;
     logic   pixel_value_next;
+
+    logic[8:0] clk_count, sig1, sig2, sig3, sig4, sig5, sig6;
 
     logic[params.pixel_x_bits-1:0] pixel_x_target_next;
     logic[params.pixel_y_bits-1:0] pixel_y_target_next;
@@ -60,18 +64,47 @@ module top_debug #(
         .GAME_next_frame, .VGA_frame);
 
     game_decoder #(.params(params)) Game_Decoder(.VGA_new_frame_ready, .VGA_frame, .pixel_x_target_next, .pixel_y_target_next, 
-        .pixel_value_next, .v_sync);
+        .pixel_value_next, .v_sync,
+        .sig0(clk_count),   // logic [8:0]
+        .sig1,
+        .sig2,
+        .sig3,
+        .sig4,
+        .sig5,
+        .sig6
+        );
 
     //game_encoder Game_Encoder(.GAME_new_frame_ready(), .GAME_next_frame, .GAME_frame_select(spi_data[3:0]));
 
-    game_executioner Game_Executioner(.reset(~reset_n), .move_clk(), .game_clk(clk_divided), .move(), .new_piece(tetris_pkg::SQUARE), .GAME_state(GAME_next_frame));
+    game_executioner Game_Executioner(.reset(~reset_n), .move_clk(), .game_clk, .move(), .new_piece(tetris_pkg::SQUARE), .GAME_state(GAME_next_frame),
+        .sig1,
+        .sig2,
+        .sig3,
+        .sig4,
+        .sig5,
+        .sig6);
 
     spi SPI(.reset(reset_led), .sck, .sdi, .sdo, .ce, .data(spi_data));
+    logic synchronized_value, external_clk_sync_debounce;
+    // synchronize value
+    synchronizer Synchronizer (HSOSC_clk, external_clk_raw, synchronized_value);
+
+    // debounce individual switch
+    switch_debouncer #(.debounce_delay(100000)) Switch_Debouncer(HSOSC_clk, ~reset_n, synchronized_value, external_clk_sync_debounce);
+
 
     // Once new data has come it and chip enable goes low then assert new frame ready
-    assign GAME_new_frame_ready = ~clk_divided;
+    assign GAME_new_frame_ready = game_clk;
 
-    clock_divider #(.div_count(10000000)) Clock_Divider(.clk(HSOSC_clk), .reset(~reset_n), .clk_divided);
+    clock_divider #(.div_count(30000000)) Clock_Divider(.clk(HSOSC_clk), .reset(~reset_n), .clk_divided);
+
+    always_ff @(posedge game_clk) begin
+        if (~reset_n)   clk_count <= 0;
+        else            clk_count <= clk_count + 1;
+    end
+
+    assign game_clk = external_clk_sync_debounce;
+    // assign game_clk = clk_divided;
 
 
 endmodule  

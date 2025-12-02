@@ -14,7 +14,16 @@ module game_decoder #(
         input   logic[params.pixel_y_bits-1:0]  pixel_y_target_next,
         output  logic                           pixel_value_next,
 
-        input   logic                           v_sync
+        input   logic                           v_sync,
+
+        // Telemetry values (9-bit each, e.g. 0..511)
+        input  logic [8:0]                     sig0,
+        input  logic [8:0]                     sig1,
+        input  logic [8:0]                     sig2,
+        input  logic [8:0]                     sig3,
+        input  logic [8:0]                     sig4,
+        input  logic [8:0]                     sig5,
+        input  logic [8:0]                     sig6
     );
 
     logic[10:0] x_idx, y_idx;
@@ -36,7 +45,7 @@ module game_decoder #(
     //   BORDER_PAD:     gap between game area and inner edge of border
     //   BORDER_THICK:   thickness of the border ring
     // ------------------------------------------------------------
-    localparam int BORDER_PAD   = 4;   // <--- tweak this
+    localparam int BORDER_PAD   = 1;   // <--- tweak this
     localparam int BORDER_THICK = 10;   // <--- and this
 
     // Inner edge of the border (closest to the game)
@@ -83,13 +92,13 @@ module game_decoder #(
         .pixel_y_target_next,
 
         // Your 9-bit telemetry sources:
-        .sig0 (9'b1001),   // logic [8:0]
-        .sig1 (9'b1101),
-        .sig2 (9'b0001),
-        .sig3 (0),
-        .sig4 (0),
-        .sig5 (0),
-        .sig6 (0),
+        .sig0,   // logic [8:0]
+        .sig1,
+        .sig2,
+        .sig3,
+        .sig4,
+        .sig5,
+        .sig6,
 
         .telemetry_pixel     (telemetry_pixel)
     );
