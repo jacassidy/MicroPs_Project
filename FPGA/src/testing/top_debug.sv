@@ -16,7 +16,8 @@ module top_debug #(
         output  logic       sdo,
         input   logic       ce,
 
-        input   logic       external_clk_raw
+        input   logic       external_clk_raw,
+        output  logic       debug_led
     );
 
     // SPI signals
@@ -105,6 +106,8 @@ module top_debug #(
 
     assign game_clk = external_clk_sync_debounce;
     // assign game_clk = clk_divided;
+
+    assign debug_led = ce;
 
 
 endmodule  

@@ -313,25 +313,41 @@ int main(void) {
       scanKeyboard();
       
       if (check_timer(TIM15)){
+        int key_value     = 0;
+        bool key_pressed  = false;
         if (keyboard_get_key_state('W')) {
-          // W has been pressed at least once
-          // do something for forward movement, etc.
-          printf("W Key down\n");
-           // // Update string with current LED state
-          // counter += 1;
-          uint32_t randnum = getRandomNumber();
-          //printf("%d",randnum);
-          enable_cs();
-          spiSendReceive(randnum & 0xFF);
-          disable_cs();
+          key_value = 0;
+          key_pressed = true;
+        }else if(keyboard_get_key_state('S')) {
+          key_value = 1;
+          key_pressed = true;
+        }else if(keyboard_get_key_state('A')) {
+          key_value = 2;
+          key_pressed = true;
+        }else if(keyboard_get_key_state('D')) {
+          key_value = 3;
+          key_pressed = true;
         }
 
-        begin_timer(TIM15, 1000);
+       
+        // W has been pressed at least once
+        // do something for forward movement, etc.
+        printf("W Key down\n");
+         // // Update string with current LED state
+        // counter += 1;
+        uint32_t randnum = getRandomNumber();
+        while ((randnum & 0xFF) == 8){
+          randnum = getRandomNumber();
+        }
+        //printf("%d",randnum);
+        enable_cs();
+        spiSendReceive(0xFF & ((uint8_t)key_pressed << (2 + 3) | ((uint8_t)randnum << 2) | (uint8_t)key_value));
+        disable_cs();
       }
 
 
-     
+      begin_timer(TIM15, 1000);
+    }
 
       //delay_millis(TIM16, 10);
-    }
 }
