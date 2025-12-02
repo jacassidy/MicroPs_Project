@@ -17,9 +17,7 @@ module game_executioner #(
         input   tetris_pkg::command_t               move,
         input   tetris_pkg::active_piece_t          new_piece,
 
-        output  game_state_pkg::game_state_t        GAME_state,
-
-        output  logic [TELEMETRY_VALUE_WIDTH-1:0]    telemetry_values [TELEMETRY_NUM_SIGNALS]
+        output  game_state_pkg::game_state_t        GAME_state
     );
 
     logic floating_piece;
@@ -80,7 +78,8 @@ module game_executioner #(
     // a new piece is asserted when the line isnt being cleared and thee isnt a floating piece the frame before, once you insert a new piece, you no longer insert a new piece
     assign inset_new_piece = no_piece;
 
-    flopRFS #(.WIDTH(5)) Gravity(.clk(game_clk), .reset, .flush(inset_new_piece | clearing_line), .stall(active_piece_toutching_bottom), .D(active_piece.y + 1), .Q(active_piece.y));
+    flopRFS_2clk #(.WIDTH(5)) Gravity(.clk_tree(clk), .target_clk(game_clk), .reset, .flush(inset_new_piece | clearing_line), .stall(active_piece_toutching_bottom), 
+                                .D(active_piece.y + 1), .Q(active_piece.y));
 
     piece_decoder Piece_Decoder(.active_piece, .active_piece_grid);
 
@@ -109,19 +108,5 @@ module game_executioner #(
     end
 
     blit_piece Blit_Piece(.base_state(GAME_fixed_state), .active_piece_grid, .out_state(GAME_state));
-
-    // assign sig1 = active_piece.x;
-    // assign sig2 = active_piece.y;
-    assign telemetry_values[0] = floating_piece;
-    assign telemetry_values[1] = active_piece_toutching_bottom;
-    assign telemetry_values[2] = active_piece_toutching_left;
-    assign telemetry_values[3] = active_piece_toutching_right;
-    assign telemetry_values[4] = clearing_line;
-    assign telemetry_values[5] = no_piece;
-
-    // assign sig1 = inset_new_piece;
-    // assign sig2 = reset;
-    // assign sig3 = stall_move_clk;
-    // assign sig4 = move_clk;
 
 endmodule

@@ -5,14 +5,15 @@
 
 module top_debug #(
         parameter vga_pkg::vga_params_t params = vga_pkg::VGA_640x480_60,
-        parameter int TELEMETRY_NUM_SIGNALS             = 2,    // 7 lines
         parameter int TELEMETRY_VALUE_WIDTH             = 8,
         parameter int TELEMETRY_BASE                    = 16
     )(
         input   logic       reset_n,
         output  logic       h_sync,
         output  logic       v_sync,
-        output  logic       pixel_signal,
+        output  logic       pixel_signal_R,         // gated with visible region
+        output  logic       pixel_signal_G,         // gated with visible region
+        output  logic       pixel_signal_B,
 
         input   logic       sck,
         input   logic       sdi,
@@ -28,7 +29,7 @@ module top_debug #(
     logic [7:0] spi_data;
     logic clk_divided;
 
-    logic [TELEMETRY_VALUE_WIDTH-1:0]    telemetry_values [TELEMETRY_NUM_SIGNALS];
+    logic [TELEMETRY_VALUE_WIDTH-1:0]    telemetry_values [2];
 
     logic game_clk;
     
@@ -37,7 +38,7 @@ module top_debug #(
 
     // VGA Signals
     logic   HSOSC_clk, VGA_clk;
-    logic   pixel_value_next;
+    logic   pixel_value_next_R, pixel_value_next_G, pixel_value_next_B;
 
     logic[params.pixel_x_bits-1:0] pixel_x_target_next;
     logic[params.pixel_y_bits-1:0] pixel_y_target_next;
@@ -65,11 +66,15 @@ module top_debug #(
         // pixel addressing (for renderer)
         .pixel_x_target_next,
         .pixel_y_target_next,
-        .pixel_value_next,          // 1=on, 0=off
+        .pixel_value_next_R, 
+        .pixel_value_next_G, 
+        .pixel_value_next_B,
         // VGA pins
         .h_sync,
         .v_sync,
-        .pixel_signal, // core will gate to visible region
+        .pixel_signal_R, // core will gate to visible region
+        .pixel_signal_G, // core will gate to visible region
+        .pixel_signal_B, // core will gate to visible region
         .VGA_clk,
         .HSOSC_clk
     );
@@ -79,12 +84,26 @@ module top_debug #(
 
     game_decoder #(
             .params(params), 
-            .TELEMETRY_NUM_SIGNALS(TELEMETRY_NUM_SIGNALS),    
+            .TELEMETRY_NUM_SIGNALS(2),    
             .TELEMETRY_VALUE_WIDTH(TELEMETRY_VALUE_WIDTH),
             .TELEMETRY_BASE(TELEMETRY_BASE)
         ) Game_Decoder(
             .VGA_new_frame_ready, .VGA_frame, .pixel_x_target_next, .pixel_y_target_next, 
-            .pixel_value_next, .v_sync, .telemetry_values
+            .pixel_value_next_R, .pixel_value_next_G, .pixel_value_next_B, .v_sync, .telemetry_values,
+            .debug_window_0(),
+            .debug_window_1(),
+            .debug_window_2(),
+            .debug_window_3(),
+            .debug_window_4(),
+            .debug_window_5(),
+
+            // 6 sets of debug signals (2×8-bit each)
+            .debug_singals_0(),
+            .debug_singals_1(),
+            .debug_singals_2(),
+            .debug_singals_3(),
+            .debug_singals_4(),
+            .debug_singals_5()
         );
 
     //game_encoder Game_Encoder(.GAME_new_frame_ready(), .GAME_next_frame, .GAME_frame_select(spi_data[3:0]));
@@ -104,7 +123,7 @@ module top_debug #(
     end
 
     game_executioner #(
-            .TELEMETRY_NUM_SIGNALS(TELEMETRY_NUM_SIGNALS),    
+            .TELEMETRY_NUM_SIGNALS(2),    
             .TELEMETRY_VALUE_WIDTH(TELEMETRY_VALUE_WIDTH),
             .TELEMETRY_BASE(TELEMETRY_BASE)
         )Game_Executioner(
@@ -115,14 +134,12 @@ module top_debug #(
             .move(tetris_pkg::command_t'(spi_data[1:0])), 
             .move_valid(spi_data[5]), 
             .new_piece, 
-            .GAME_state(GAME_next_frame),
-            .telemetry_values()
+            .GAME_state(GAME_next_frame)
             );
 
     spi SPI(.reset(~reset_n), .clk(HSOSC_clk), .sck, .sdi, .sdo, .ce, .clear(invalidate_spi_data), .data(spi_data), .data_valid(spi_data_valid));
 
     synchronizer SPI_Invalidator(.clk(HSOSC_clk), .raw_input(spi_data_valid), .synchronized_value(invalidate_spi_data));
-
     
     // synchronize value
     synchronizer Synchronizer (HSOSC_clk, external_clk_raw, synchronized_value);
@@ -141,9 +158,10 @@ module top_debug #(
     end
 
     assign game_clk = external_clk_sync_debounce;
+    //assign game_clk = 1'b1;
     // assign game_clk = clk_divided;
 
-    assign debug_led = spi_data_valid;
+    assign debug_led = game_clk;
 
 
 endmodule  

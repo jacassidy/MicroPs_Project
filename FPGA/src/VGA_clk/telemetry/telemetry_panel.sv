@@ -75,6 +75,7 @@ module telemetry_panel #(
     always_comb begin
 		int colon_col;
 		int space_col;
+        int col;
 		logic [7:0] digits [NUM_VALUE_DIGITS];
         // Default all cells to spaces
         for (int r = 0; r < NUM_ROWS; r++) begin
@@ -102,7 +103,7 @@ module telemetry_panel #(
 
             // 4) Place digits immediately after "LABEL: "
             for (int d = 0; d < NUM_VALUE_DIGITS; d++) begin
-                int col = LABEL_LEN + 2 + d; // label + ": " + digits
+                col = LABEL_LEN + 2 + d; // label + ": " + digits
                 if (col < NUM_COLS)
                     chars[s][col] = digits[d];
             end

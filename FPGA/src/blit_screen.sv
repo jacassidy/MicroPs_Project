@@ -21,6 +21,9 @@ module blit_screen #(
     parameter int WIDTH,   // GAME_X_MAX - GAME_X_MIN
     parameter int HEIGHT,   // GAME_Y_MAX - GAME_Y_MIN
 
+    parameter int FRAME_WIDTH,
+    parameter int FRAME_HEIGHT,
+
     // How many LSBs to drop when mapping pixels -> board cells (2^SCALE_SHIFT)
     parameter int SCALE_SHIFT,     // 16x16 pixels per cell
 
@@ -40,7 +43,9 @@ module blit_screen #(
     input  logic                               reset,
 
     // Game state to render
-    input  game_state_pkg::game_state_t        frame,
+    input  logic [FRAME_HEIGHT-1:0]            frame_R [FRAME_WIDTH-1:0],
+    input  logic [FRAME_HEIGHT-1:0]            frame_G [FRAME_WIDTH-1:0],
+    input  logic [FRAME_HEIGHT-1:0]            frame_B [FRAME_WIDTH-1:0],
 
     // Current pixel from VGA timing
     input  logic [params.pixel_x_bits-1:0]     pixel_x_target_next,
@@ -50,7 +55,9 @@ module blit_screen #(
     input  logic [TELEMETRY_VALUE_WIDTH-1:0]   telemetry_values [TELEMETRY_NUM_SIGNALS],
 
     // This panel's contribution to the pixel
-    output logic                               panel_pixel
+    output logic                               panel_pixel_R,
+    output logic                               panel_pixel_G,
+    output logic                               panel_pixel_B
 );
 
     // ------------------------------------------------------------
@@ -88,8 +95,12 @@ module blit_screen #(
     logic [params.pixel_x_bits-1:0] x_idx;
     logic [params.pixel_y_bits-1:0] y_idx;
     logic                           in_game_rect;
-    logic                           game_pixel_value;
-    logic                           game_pixel;
+    logic                           game_pixel_value_R;
+    logic                           game_pixel_value_G;
+    logic                           game_pixel_value_B;
+    logic                           game_pixel_R;
+    logic                           game_pixel_G;
+    logic                           game_pixel_B;
     logic                           border_pixel;
     logic                           telemetry_pixel;
 
@@ -105,15 +116,25 @@ module blit_screen #(
     // Only valid when we're inside the game rect.
     always_comb begin
         if (in_game_rect) begin
-            game_pixel_value =
-                frame.screen[ x_idx[params.pixel_x_bits-1:SCALE_SHIFT] ]
+            game_pixel_value_R =
+                frame_R[ x_idx[params.pixel_x_bits-1:SCALE_SHIFT] ]
+                             [ y_idx[params.pixel_y_bits-1:SCALE_SHIFT] ];
+            game_pixel_value_G =
+                frame_G[ x_idx[params.pixel_x_bits-1:SCALE_SHIFT] ]
+                             [ y_idx[params.pixel_y_bits-1:SCALE_SHIFT] ];
+            game_pixel_value_B =
+                frame_B[ x_idx[params.pixel_x_bits-1:SCALE_SHIFT] ]
                              [ y_idx[params.pixel_y_bits-1:SCALE_SHIFT] ];
         end else begin
-            game_pixel_value = 1'b0;
+            game_pixel_value_R = 1'b0;
+            game_pixel_value_G = 1'b0;
+            game_pixel_value_B = 1'b0;
         end
     end
 
-    assign game_pixel = in_game_rect & game_pixel_value;
+    assign game_pixel_R = in_game_rect & game_pixel_value_R;
+    assign game_pixel_G = in_game_rect & game_pixel_value_G;
+    assign game_pixel_B = in_game_rect & game_pixel_value_B;
 
     // Border logic
     assign border_pixel =
@@ -146,6 +167,8 @@ module blit_screen #(
     );
 
     // Final output for this panel
-    assign panel_pixel = game_pixel | border_pixel | telemetry_pixel;
+    assign panel_pixel_R = game_pixel_R | border_pixel | telemetry_pixel;
+    assign panel_pixel_G = game_pixel_G | border_pixel | telemetry_pixel;
+    assign panel_pixel_B = game_pixel_B | border_pixel | telemetry_pixel;
 
 endmodule

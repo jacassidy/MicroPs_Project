@@ -10,11 +10,15 @@ module vga_controller #(
     // pixel addressing (for your renderer)
     output  logic [params.pixel_x_bits-1:0]         pixel_x_target_next,
     output  logic [params.pixel_y_bits-1:0]         pixel_y_target_next,
-    input   logic                                   pixel_value_next,     // 1=on, 0=off (next pixel)
+    input   logic                                   pixel_value_next_R,
+    input   logic                                   pixel_value_next_G,
+    input   logic                                   pixel_value_next_B,
     // VGA pins
     output  logic                                   h_sync,
     output  logic                                   v_sync,
-    output  logic                                   pixel_signal,         // gated with visible region
+    output  logic                                   pixel_signal_R,         // gated with visible region
+    output  logic                                   pixel_signal_G,         // gated with visible region
+    output  logic                                   pixel_signal_B,         // gated with visible region
     output  logic                                   VGA_clk,              // internal/global pixel clock (PLLOUTGLOBALB)
     output  logic                                   HSOSC_clk
     // optional debug outs (safe to send to pins)
@@ -115,7 +119,9 @@ module vga_controller #(
     end
 
     // Gate the incoming pixel bit with the visible window
-    assign pixel_signal = video_on & pixel_value_next;
+    assign pixel_signal_R = video_on & pixel_value_next_R;
+    assign pixel_signal_G = video_on & pixel_value_next_G;
+    assign pixel_signal_B = video_on & pixel_value_next_B;
 
     // -------------------------------------------------------------------------
     // HSYNC / VSYNC pulses (polarity from params)

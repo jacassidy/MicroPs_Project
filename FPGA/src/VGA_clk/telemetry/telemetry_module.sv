@@ -107,8 +107,7 @@ module telemetry_module #(
 
             // 4) Place digits immediately after "LABEL: "
             for (d = 0; d < NUM_COLS; d++) begin
-                int col_idx = d;
-                telemetry_chars[s][col_idx] = digits[d];
+                telemetry_chars[s][d] = digits[d];
             end
         end
     end
