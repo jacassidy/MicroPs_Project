@@ -84,8 +84,12 @@ module flopRFS #(
 );
 
     always_ff @( posedge clk ) begin 
-        if (reset | flush)  Q <= 0;
-        else if (~stall)    Q <= D;
+        if (reset)          Q <= 0;
+        else if (~stall) begin
+            if (flush)      Q <= 0;
+            else            Q <= D;
+        end
+        
     end
 
 endmodule

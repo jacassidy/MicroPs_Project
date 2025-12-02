@@ -7,12 +7,12 @@ module msb_index #(
     parameter int WIDTH = 8
 )(
     input  logic [WIDTH-1:0]         in,
-    output logic [$clog2(WIDTH)-1:0] idx,    // index of MSB '1'
-    output logic                     valid   // 1 if any bit is set
+    output logic [$clog2(WIDTH)-1:0] idx    // index of MSB '1'
+    //output logic                     valid   // 1 if any bit is set
 );
 
     always_comb begin
-        valid = (in != '0);
+        //valid = (in != '0);
         idx   = '0;
 
         // Scan from MSB down to LSB; first '1' we see wins.

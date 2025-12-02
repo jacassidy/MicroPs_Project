@@ -32,7 +32,23 @@ package tetris_pkg;
     logic  [4:0]  y;   // 0..19 (board rows)
   } active_piece_t;
 
-  typedef struct packed {
+  // Constant function to build the struct so we don't repeat math
+  function active_piece_t make_piece(
+    piece_type_t piece, rotation_t rotation
+  );
+    active_piece_t t;
+
+    t.piece_type    = piece;
+    t.rotation      = rotation;
+    t.y             = 0;
+    t.x             = 3;
+
+    return t;
+  endfunction
+
+  localparam active_piece_t SQUARE = make_piece(PIECE_L, ROT_0);
+
+  typedef struct {
     logic  [3:0]  piece [3:0];
     logic  [3:0]  x;   // 0..9 (starting x of top left of grid)
     logic  [4:0]  y;   // 0..19 (starting y of top left)
