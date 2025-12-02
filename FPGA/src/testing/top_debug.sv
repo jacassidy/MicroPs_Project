@@ -26,6 +26,9 @@ module top_debug #(
     logic clk_divided;
 
     logic game_clk;
+    
+    // SPI signals
+    logic invalidate_spi_data, spi_data_valid;
 
     // VGA Signals
     logic   HSOSC_clk, VGA_clk;
@@ -76,16 +79,42 @@ module top_debug #(
         );
 
     //game_encoder Game_Encoder(.GAME_new_frame_ready(), .GAME_next_frame, .GAME_frame_select(spi_data[3:0]));
+    tetris_pkg::active_piece_t new_piece;
 
-    game_executioner Game_Executioner(.reset(~reset_n), .move_clk(), .game_clk, .move(), .new_piece(tetris_pkg::SQUARE), .GAME_state(GAME_next_frame),
+    assign sig6 = spi_data;
+
+    always_comb begin
+        unique case (spi_data[4:2])
+            3'd0: new_piece = tetris_pkg::HERO;
+            3'd1: new_piece = tetris_pkg::SMASH_BOY;
+            3'd2: new_piece = tetris_pkg::TEEWEE;
+            3'd3: new_piece = tetris_pkg::ORANGE_RICKY;
+            3'd4: new_piece = tetris_pkg::BLUE_RICKY;
+            3'd5: new_piece = tetris_pkg::RHODE_ISLAND_Z;
+            3'd6: new_piece = tetris_pkg::CLEVELAND_Z;
+            default: new_piece = tetris_pkg::HERO;  // or '0 if you prefer
+        endcase
+    end
+
+    game_executioner Game_Executioner(.reset(~reset_n), 
+        .move_clk(spi_data_valid), 
+		.clk(HSOSC_clk),
+        .game_clk, 
+        .move(tetris_pkg::command_t'(spi_data[1:0])), 
+        .move_valid(spi_data[5]), 
+        .new_piece, 
+        .GAME_state(GAME_next_frame),
         .sig1,
         .sig2,
         .sig3,
         .sig4,
         .sig5,
-        .sig6);
+        .sig6());
 
-    spi SPI(.reset(reset_led), .sck, .sdi, .sdo, .ce, .data(spi_data));
+    spi SPI(.reset(~reset_n), .clk(HSOSC_clk), .sck, .sdi, .sdo, .ce, .clear(invalidate_spi_data), .data(spi_data), .data_valid(spi_data_valid));
+
+    synchronizer SPI_Invalidator(.clk(HSOSC_clk), .raw_input(spi_data_valid), .synchronized_value(invalidate_spi_data));
+
     logic synchronized_value, external_clk_sync_debounce;
     // synchronize value
     synchronizer Synchronizer (HSOSC_clk, external_clk_raw, synchronized_value);
@@ -93,9 +122,8 @@ module top_debug #(
     // debounce individual switch
     switch_debouncer #(.debounce_delay(100000)) Switch_Debouncer(HSOSC_clk, ~reset_n, synchronized_value, external_clk_sync_debounce);
 
-
     // Once new data has come it and chip enable goes low then assert new frame ready
-    assign GAME_new_frame_ready = game_clk;
+    assign GAME_new_frame_ready = 1'b1;
 
     clock_divider #(.div_count(30000000)) Clock_Divider(.clk(HSOSC_clk), .reset(~reset_n), .clk_divided);
 
@@ -107,7 +135,7 @@ module top_debug #(
     assign game_clk = external_clk_sync_debounce;
     // assign game_clk = clk_divided;
 
-    assign debug_led = ce;
+    assign debug_led = spi_data_valid;
 
 
 endmodule  

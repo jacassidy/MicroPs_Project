@@ -5,7 +5,9 @@
 
 module game_executioner(
         input   logic                           reset,
+        input   logic                           clk,
         input   logic                           move_clk,
+        input   logic                           move_valid,
         input   logic                           game_clk,
 
         input   tetris_pkg::command_t           move,
@@ -46,24 +48,42 @@ module game_executioner(
 
     piece_decoder Piece_Decoder(.active_piece, .active_piece_grid);
 
-    //flopRE #(.WIDTH($bits(GAME_fixed_state.screen))) flop_Fixed_State(.clk(game_clk), .reset, .en(active_piece_toutching), .D(GAME_state.screen), .Q(GAME_fixed_state.screen));
 	always_ff @(posedge game_clk) begin
 		if (reset)  GAME_fixed_state.screen <= game_state_pkg::blank_game_state.screen;
         else if (active_piece_toutching)        
                     GAME_fixed_state.screen <= GAME_state.screen;
 	end
 	
-    flopRE #(.WIDTH($bits({new_piece.x,    new_piece.rotation,     new_piece.piece_type}))) flop_Piece_State(.clk(game_clk), .reset, .en(inset_new_piece), 
-                        .D({new_piece.x,    new_piece.rotation,     new_piece.piece_type}), 
-                        .Q({active_piece.x, active_piece.rotation,  active_piece.piece_type}));
+    flopRE #(.WIDTH($bits({new_piece.rotation,     new_piece.piece_type}))) flop_Piece_State(.clk(game_clk), .reset, .en(inset_new_piece), 
+                        .D({new_piece.rotation,     new_piece.piece_type}), 
+                        .Q({active_piece.rotation,  active_piece.piece_type}));
+
+    logic stall_move_clk;
+
+    synchronizer Mv_clk_delay(.clk(clk), .raw_input(move_clk), .synchronized_value(stall_move_clk));
+
+    always_ff @(posedge stall_move_clk) begin //
+        if (reset | inset_new_piece) active_piece.x <= new_piece.x;
+        else begin
+            if (move_valid) begin
+                if (move == tetris_pkg::CMD_LEFT)  active_piece.x <= active_piece.x - 1;
+                if (move == tetris_pkg::CMD_RIGHT) active_piece.x <= active_piece.x + 1;
+            end
+        end
+    end
 
     blit_piece Blit_Piece(.base_state(GAME_fixed_state), .active_piece_grid, .out_state(GAME_state));
 
-    assign sig1 = active_piece.x;
-    assign sig2 = active_piece.y;
-    assign sig3 = floating_piece;
-    assign sig4 = active_piece_toutching;
-    assign sig5 = clearing_line;
-    assign sig6 = no_piece;
+    // assign sig1 = active_piece.x;
+    // assign sig2 = active_piece.y;
+    // assign sig3 = floating_piece;
+    // assign sig4 = active_piece_toutching;
+    // assign sig5 = clearing_line;
+    // assign sig6 = no_piece;
+
+    assign sig1 = inset_new_piece;
+    assign sig2 = reset;
+    assign sig3 = stall_move_clk;
+    assign sig4 = move_clk;
 
 endmodule

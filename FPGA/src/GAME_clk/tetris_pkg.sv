@@ -41,12 +41,18 @@ package tetris_pkg;
     t.piece_type    = piece;
     t.rotation      = rotation;
     t.y             = 0;
-    t.x             = 0;
+    t.x             = 4;
 
     return t;
   endfunction
 
-  localparam active_piece_t SQUARE = make_piece(PIECE_L, ROT_0);
+  localparam active_piece_t HERO            = make_piece(PIECE_I, ROT_0);
+  localparam active_piece_t SMASH_BOY       = make_piece(PIECE_O, ROT_0);
+  localparam active_piece_t TEEWEE          = make_piece(PIECE_T, ROT_0);
+  localparam active_piece_t ORANGE_RICKY    = make_piece(PIECE_L, ROT_0);
+  localparam active_piece_t BLUE_RICKY      = make_piece(PIECE_J, ROT_0);
+  localparam active_piece_t RHODE_ISLAND_Z  = make_piece(PIECE_S, ROT_0);
+  localparam active_piece_t CLEVELAND_Z     = make_piece(PIECE_Z, ROT_0);
 
   typedef struct {
     logic  [3:0]  piece [3:0];
@@ -55,12 +61,11 @@ package tetris_pkg;
   } active_piece_grid_t;
 
   // Simple command enum from MCU (or buttons)
-  typedef enum logic [2:0] {
-    CMD_NONE,
-    CMD_LEFT,
-    CMD_RIGHT,
-    CMD_ROTATE,
-    CMD_SOFT_DROP
+  typedef enum logic [1:0] {
+    CMD_LEFT      = 2'd2,
+    CMD_RIGHT     = 2'd3,
+    CMD_ROTATE    = 2'd0,
+    CMD_SOFT_DROP = 2'd1
   } command_t;
 
 endpackage : tetris_pkg
