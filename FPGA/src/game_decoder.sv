@@ -21,6 +21,7 @@ module game_decoder #(
     logic       boarder;
     logic       game_pixel_value;
     logic       game_pixel;
+    logic       telemetry_pixel;
 
     // ------------------------------------------------------------
     // Game area geometry
@@ -70,6 +71,26 @@ module game_decoder #(
                                 pixel_y_target_next >= BORDER_INNER_Y_MIN &&
                                 pixel_y_target_next <  BORDER_INNER_Y_MAX);
 
-    assign pixel_value_next     = (game_pixel & game_pixel_value) | boarder;
+    assign pixel_value_next     = (game_pixel & game_pixel_value) | boarder | telemetry_pixel;
 
+    //telemetry_module #(params) Telemetry_Module(.clk(v_sync), .reset(), .pixel_x_target_next, .pixel_y_target_next, .telemetry_pixel);
+    telemetry_module #(
+        .params(params)
+    ) u_telemetry (
+        .clk                 (clk),
+        .reset               (),
+        .pixel_x_target_next,
+        .pixel_y_target_next,
+
+        // Your 9-bit telemetry sources:
+        .sig0 (9'b1001),   // logic [8:0]
+        .sig1 (9'b1101),
+        .sig2 (9'b0001),
+        .sig3 (0),
+        .sig4 (0),
+        .sig5 (0),
+        .sig6 (0),
+
+        .telemetry_pixel     (telemetry_pixel)
+    );
 endmodule
