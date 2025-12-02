@@ -6,7 +6,7 @@
 module top_debug #(
         parameter vga_pkg::vga_params_t params = vga_pkg::VGA_640x480_60,
         parameter int TELEMETRY_VALUE_WIDTH             = 8,
-        parameter int TELEMETRY_BASE                    = 16
+        parameter int TELEMETRY_BASE                    = 2
     )(
         input   logic       reset_n,
         output  logic       h_sync,

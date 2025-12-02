@@ -51,13 +51,13 @@ module vga_controller #(
     );
 
     // Expose clocks as requested
-    assign vga_clk       = pll_clk_internal;
+    assign VGA_clk       = pll_clk_internal;
 
     // -------------------------------------------------------------------------
     // Synchronized reset release: hold counters in reset until PLL is locked
     // -------------------------------------------------------------------------
     logic lock_sync1, lock_sync2;
-    always_ff @(posedge vga_clk or negedge reset_n) begin
+    always_ff @(posedge VGA_clk or negedge reset_n) begin
         if (~reset_n) begin
             lock_sync1 <= 1'b0;
             lock_sync2 <= 1'b0;
@@ -88,7 +88,7 @@ module vga_controller #(
     // -------------------------------------------------------------------------
     // Pixel clock domain counters
     // -------------------------------------------------------------------------
-    always_ff @(posedge vga_clk or negedge pix_rst_n) begin
+    always_ff @(posedge VGA_clk or negedge pix_rst_n) begin
         if (~pix_rst_n) begin
             h_ctr <= '0;
             v_ctr <= '0;
