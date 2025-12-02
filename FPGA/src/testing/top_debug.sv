@@ -3,6 +3,9 @@
 // kacassidy@hmc.edu
 // 11/13/2025
 
+////`include "parameters.svh"
+`define COLORS 3
+
 module top_debug #(
         parameter vga_pkg::vga_params_t params = vga_pkg::VGA_640x480_60,
         parameter int TELEMETRY_VALUE_WIDTH             = 8,
@@ -23,6 +26,21 @@ module top_debug #(
         input   logic       external_clk_raw,
         output  logic       debug_led
     );
+
+    // DEBUG
+    logic [5:0]                         debug_window_0 [`COLORS][5:0];
+    logic [5:0]                         debug_window_1 [`COLORS][5:0];
+    logic [5:0]                         debug_window_2 [`COLORS][5:0];
+    logic [5:0]                         debug_window_3 [`COLORS][5:0];
+    logic [5:0]                         debug_window_4 [`COLORS][5:0];
+    logic [5:0]                         debug_window_5 [`COLORS][5:0];
+    // 6 sets of debug signals (2Ã—8-bit each)
+    logic [7:0]                         debug_singals_0 [2];
+    logic [7:0]                         debug_singals_1 [2];
+    logic [7:0]                         debug_singals_2 [2];
+    logic [7:0]                         debug_singals_3 [2];
+    logic [7:0]                         debug_singals_4 [2];
+    logic [7:0]                         debug_singals_5 [2];
 
     // SPI signals
 
@@ -90,20 +108,20 @@ module top_debug #(
         ) Game_Decoder(
             .VGA_new_frame_ready, .VGA_frame, .pixel_x_target_next, .pixel_y_target_next, 
             .pixel_value_next_R, .pixel_value_next_G, .pixel_value_next_B, .v_sync, .telemetry_values,
-            .debug_window_0(),
-            .debug_window_1(),
-            .debug_window_2(),
-            .debug_window_3(),
-            .debug_window_4(),
-            .debug_window_5(),
+            .debug_window_0,
+            .debug_window_1,
+            .debug_window_2,
+            .debug_window_3,
+            .debug_window_4,
+            .debug_window_5,
 
             // 6 sets of debug signals (2×8-bit each)
-            .debug_singals_0(),
-            .debug_singals_1(),
-            .debug_singals_2(),
-            .debug_singals_3(),
-            .debug_singals_4(),
-            .debug_singals_5()
+            .debug_singals_0,
+            .debug_singals_1,
+            .debug_singals_2,
+            .debug_singals_3,
+            .debug_singals_4,
+            .debug_singals_5
         );
 
     //game_encoder Game_Encoder(.GAME_new_frame_ready(), .GAME_next_frame, .GAME_frame_select(spi_data[3:0]));
@@ -134,7 +152,21 @@ module top_debug #(
             .move(tetris_pkg::command_t'(spi_data[1:0])), 
             .move_valid(spi_data[5]), 
             .new_piece, 
-            .GAME_state(GAME_next_frame)
+            .GAME_state(GAME_next_frame),
+            .debug_window_0,
+            .debug_window_1,
+            .debug_window_2,
+            .debug_window_3,
+            .debug_window_4,
+            .debug_window_5,
+
+            // 6 sets of debug signals (2×8-bit each)
+            .debug_singals_0,
+            .debug_singals_1,
+            .debug_singals_2,
+            .debug_singals_3,
+            .debug_singals_4,
+            .debug_singals_5
             );
 
     spi SPI(.reset(~reset_n), .clk(HSOSC_clk), .sck, .sdi, .sdo, .ce, .clear(invalidate_spi_data), .data(spi_data), .data_valid(spi_data_valid));

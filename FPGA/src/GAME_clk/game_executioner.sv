@@ -3,6 +3,9 @@
 // kacassidy@hmc.edu
 // 12/1/2025
 
+//`include "parameters.svh"
+`define COLORS 3
+
 module game_executioner #(
     parameter int                                   TELEMETRY_NUM_SIGNALS,    
     parameter int                                   TELEMETRY_VALUE_WIDTH,
@@ -17,7 +20,23 @@ module game_executioner #(
         input   tetris_pkg::command_t               move,
         input   tetris_pkg::active_piece_t          new_piece,
 
-        output  game_state_pkg::game_state_t        GAME_state
+        output  game_state_pkg::game_state_t        GAME_state,
+
+        // 6 debug windows, each 3-color 6x6
+        output  logic [5:0]                         debug_window_0 [`COLORS][5:0],
+        output  logic [5:0]                         debug_window_1 [`COLORS][5:0],
+        output  logic [5:0]                         debug_window_2 [`COLORS][5:0],
+        output  logic [5:0]                         debug_window_3 [`COLORS][5:0],
+        output  logic [5:0]                         debug_window_4 [`COLORS][5:0],
+        output  logic [5:0]                         debug_window_5 [`COLORS][5:0],
+
+        // 6 sets of debug signals (2ÃƒÆ’Ã¢â‚¬â€8-bit each)
+        output  logic [7:0]                         debug_singals_0 [2],
+        output  logic [7:0]                         debug_singals_1 [2],
+        output  logic [7:0]                         debug_singals_2 [2],
+        output  logic [7:0]                         debug_singals_3 [2],
+        output  logic [7:0]                         debug_singals_4 [2],
+        output  logic [7:0]                         debug_singals_5 [2]
     );
 
     logic floating_piece;
@@ -36,8 +55,31 @@ module game_executioner #(
     game_state_pkg::game_state_t    GAME_fixed_state;
 
 
+    piece_collision_checker Piece_Collision_Checker(
+        .no_piece,
+        .GAME_fixed_state,
+        .piece_x(active_piece.x),
+        .piece_y(active_piece.y),
+        .piece_grid(active_piece_grid.piece),
+        .left_collision(active_piece_toutching_left),
+        .right_collision(active_piece_toutching_right),
+        .down_collision(active_piece_toutching_bottom),
+        .debug_window_0,
+        .debug_window_1,
+        .debug_window_2,
+        .debug_window_3,
+        .debug_window_4,
+        .debug_window_5,
 
-    // assign no_piece = ~floating_piece & ~active_piece_toutching_bottom;
+        // 6 sets of debug signals (2Ãƒâ€”8-bit each)
+        .debug_singals_0,
+        .debug_singals_1,
+        .debug_singals_2,
+        .debug_singals_3,
+        .debug_singals_4,
+        .debug_singals_5
+    );
+
     flopR #(.WIDTH(1)) No_Piece_flop(.clk(game_clk), .reset, .D(active_piece_toutching_bottom), .Q(no_piece));
 
     // a piece is floating when the active piece is not toutching, unless clearing (no piece is active at this time)

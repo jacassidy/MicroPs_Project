@@ -3,85 +3,139 @@
 // kacassidy@hmc.edu
 // 12/1/2025
 
-module piece_collision_checker #(parameter FIXED_STATE_WIDTH = 10, parameter FIXED_STATE_HEIGHT = 20, parameter GRID = 4)(
-        input   logic                                   no_piece,
-        input   logic [GRID-1:0]                        active_piece_grid_piece[GRID-1:0],
-        input   logic [$clog2(FIXED_STATE_HEIGHT)-1:0]  piece_y,
-        input   logic [$clog2(FIXED_STATE_WIDTH)-1:0]   piece_x,
-        input   logic [FIXED_STATE_HEIGHT-1:0]          GAME_fixed_state_screen [FIXED_STATE_WIDTH-1:0],
-        output  logic                                   active_piece_toutching
-    );
+//`include "parameters.svh"
+`define COLORS 3
 
-    localparam int BOARD_WIDTH   = FIXED_STATE_WIDTH;
-    localparam int BOARD_HEIGHT  = FIXED_STATE_HEIGHT;
-    localparam int GRID_SIZE     = GRID;
-
-    // ----- MSB for all fixed columns (GAME_fixed_state) -----
-    logic [$clog2(BOARD_HEIGHT)-1:0] fixed_lsb_idx [BOARD_WIDTH];
-    //logic                            fixed_valid   [BOARD_WIDTH];
-
-    genvar fx;
-    generate
-        for (fx = 0; fx < BOARD_WIDTH; fx++) begin : gen_fixed_msb
-            lsb_index #(
-                .WIDTH(BOARD_HEIGHT)
-            ) u_fixed_msb (
-                .in   (GAME_fixed_state_screen[fx]),  // screen[fx][19:0]
-                .idx  (fixed_lsb_idx[fx])            // y of TOP-most filled cell
-                //.valid(fixed_valid[fx])               // 1 if any bit set
-            );
-        end
-    endgenerate
-
-    // ----- MSB for each of the 4 piece-grid columns (bottom-most block) -----
-    logic [$clog2(GRID_SIZE)-1:0] piece_bottom_idx [GRID_SIZE];  // 0..3
-    logic                         piece_col_valid   [GRID_SIZE];
-
-    genvar px;
-    generate
-        for (px = 0; px < GRID_SIZE; px++) begin : gen_piece_msb
-
-            msb_index #(
-                .WIDTH(GRID_SIZE)
-            ) u_piece_msb (
-                .in   (active_piece_grid_piece[px]),
-                .idx  (piece_bottom_idx[px]),    // bottom-most local row index (0..3)
-                .valid(piece_col_valid[px])      // 1 if this piece column has any block
-            );
-        end
-    endgenerate
-
-    // ------------------------------------------------------------
-    // Collision / landing detection (combinational)
-    // Using sum: piece_y_from_top + h_piece_col + h_fixed_col > 20
-    // for any valid piece column.
-    // ------------------------------------------------------------
-
-    logic [$clog2(BOARD_HEIGHT)-1:0] piece_y_from_top, h_piece_col, h_fixed_col, sum;
-
-    // want to ensure no wrap around
-    logic [$clog2(BOARD_WIDTH)-1:0] checking_index;
-
-    logic [8:0] signals [3:0];
-
+module block_pixels(output logic [5:0] block_pixels[5:0], input logic [5:0] shifted[5:0], input logic [5:0] base[5:0]);
     always_comb begin
-        active_piece_toutching  = 1'b0;
-        piece_y_from_top        = piece_y;
-        for (logic[$clog2(GRID_SIZE):0] x = 0; x < GRID_SIZE; x++) begin
-            checking_index = piece_x + x;
-
-            h_piece_col     = piece_bottom_idx[x];
-            h_fixed_col     = BOARD_HEIGHT-fixed_lsb_idx[checking_index];
-
-            sum = piece_y_from_top + h_piece_col + h_fixed_col;
-
-            signals[x] = sum;
-
-            if (sum == BOARD_HEIGHT-1 & piece_col_valid[x]) begin // TODO should invalidate if piece is below lowest piece
-                active_piece_toutching = 1'b1;
+        int x;
+        int y;
+        for (x = 0; x < 6; x++) begin
+            for (y = 0; y < 6; y++) begin
+                block_pixels[x][y] = shifted[x][y] & ~base[x][y];
             end
         end
-        active_piece_toutching = active_piece_toutching & ~no_piece;
     end
+endmodule
+
+module piece_collision_checker #(
+    parameter int BOARD_WIDTH  = 10,
+    parameter int BOARD_HEIGHT = 20
+) ( 
+        input   logic                               no_piece,
+        input   game_state_pkg::game_state_t        GAME_fixed_state,
+        input   logic[$clog2(BOARD_WIDTH) -1:0]     piece_x,
+        input   logic[$clog2(BOARD_HEIGHT)-1:0]     piece_y,
+
+        input   logic [3:0]                         piece_grid [3:0],
+        output  logic                               left_collision,
+        output  logic                               right_collision,
+        output  logic                               down_collision,
+        
+        // 6 debug windows, each 3-color 6x6
+        output  logic [5:0]                         debug_window_0 [`COLORS][5:0],
+        output  logic [5:0]                         debug_window_1 [`COLORS][5:0],
+        output  logic [5:0]                         debug_window_2 [`COLORS][5:0],
+        output  logic [5:0]                         debug_window_3 [`COLORS][5:0],
+        output  logic [5:0]                         debug_window_4 [`COLORS][5:0],
+        output  logic [5:0]                         debug_window_5 [`COLORS][5:0],
+
+        // 6 sets of debug signals (2Ãƒâ€”8-bit each)
+        output  logic [7:0]                         debug_singals_0 [2],
+        output  logic [7:0]                         debug_singals_1 [2],
+        output  logic [7:0]                         debug_singals_2 [2],
+        output  logic [7:0]                         debug_singals_3 [2],
+        output  logic [7:0]                         debug_singals_4 [2],
+        output  logic [7:0]                         debug_singals_5 [2]
+    );
+    logic [5:0] blank_mask [5:0];
+    logic [5:0] board_mask [5:0];
+    logic [5:0] piece_mask [5:0];
+
+    // shifted versions of piece_mask
+    logic [5:0] piece_mask_left  [5:0];
+    logic [5:0] piece_mask_right [5:0];
+    logic [5:0] piece_mask_down  [5:0];
+
+    assign blank_mask = '{default: 6'b0};;
+
+    piece_mask_generator Piece_Mask_Generator(.state(GAME_fixed_state), .piece_x, .piece_y, .window(board_mask));
+
+    assign debug_window_0[0]       = no_piece ? blank_mask : piece_mask;
+    assign debug_window_1[0]       = no_piece ? blank_mask : piece_mask;
+    assign debug_window_2[0]       = no_piece ? blank_mask : piece_mask;
+    
+    assign debug_window_0[1]       = board_mask;
+    assign debug_window_1[1]       = board_mask;
+    assign debug_window_2[1]       = board_mask;
+
+    block_pixels bp1(debug_window_0[2], no_piece ? blank_mask : piece_mask_down,  piece_mask);
+    block_pixels bp2(debug_window_1[2], no_piece ? blank_mask : piece_mask_left,  piece_mask);
+    block_pixels bp3(debug_window_2[2], no_piece ? blank_mask : piece_mask_right, piece_mask);
+
+    assign debug_singals_0[0]      = down_collision;
+    assign debug_singals_1[0]      = left_collision;
+    assign debug_singals_2[0]      = right_collision;
+
+    // ------------------------------------------------------------------------
+    // Build piece_mask and compute collisions with explicit (x,y) shifts
+    // ------------------------------------------------------------------------
+    always_comb begin
+        // Clear base and shifted masks
+        for (int y = 0; y < 6; y++) begin
+            piece_mask[y]       = '0;
+            piece_mask_left[y]  = '0;
+            piece_mask_right[y] = '0;
+            piece_mask_down[y]  = '0;
+        end
+
+        // Place 4×4 piece in the middle of the 6×6:
+        // piece_grid[0..3][0..3] -> piece_mask[1..4][1..4]
+        for (int y = 0; y < 4; y++) begin
+            for (int x = 0; x < 4; x++) begin
+                piece_mask[x+1][y+1] = piece_grid[x][y];
+            end
+        end
+
+        // Now shift using (x,y) coordinates so that:
+        //  - LEFT  = x-1  (if x > 0)
+        //  - RIGHT = x+1  (if x < 5)
+        //  - DOWN  = y+1  (if y < 5)
+        //
+        // Coordinate system: (0,0) = top-left, x right, y down.
+        for (int y = 0; y < 6; y++) begin
+            for (int x = 0; x < 6; x++) begin
+                if (piece_mask[x][y]) begin
+                    // move one cell left
+                    if (x > 0)
+                        piece_mask_left[x-1][y] = 1'b1;
+
+                    // move one cell right
+                    if (x < 5)
+                        piece_mask_right[x+1][y] = 1'b1;
+
+                    // move one cell down
+                    if (y < 5)
+                        piece_mask_down[x][y+1] = 1'b1;
+                end
+            end
+        end
+
+        // Collision detection (same idea as before)
+        left_collision  = 1'b0;
+        right_collision = 1'b0;
+        down_collision  = 1'b0;
+
+        for (int y = 0; y < 6; y++) begin
+            if (|(piece_mask_left[y]  & board_mask[y])) left_collision  = 1'b1;
+            if (|(piece_mask_right[y] & board_mask[y])) right_collision = 1'b1;
+            if (|(piece_mask_down[y]  & board_mask[y])) down_collision  = 1'b1;
+        end
+
+        down_collision &= ~no_piece;
+    end
+
+
+
 
 endmodule
