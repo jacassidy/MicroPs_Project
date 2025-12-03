@@ -9,7 +9,6 @@
 module top_debug #(
         parameter vga_pkg::vga_params_t params                          = vga_pkg::VGA_640x480_60,
         parameter int                   TELEMETRY_NUM_SIGNALS           = 2,
-        parameter int                   GLOBAL_TELEMETRY_NUM_SIGNALS    = 8,
         parameter int                   TELEMETRY_VALUE_WIDTH           = 8,
         parameter int                   TELEMETRY_BASE                  = 2
     )(
@@ -36,7 +35,7 @@ module top_debug #(
     logic [5:0]                         debug_window_3 [`COLORS][5:0];
     logic [5:0]                         debug_window_4 [`COLORS][5:0];
     logic [5:0]                         debug_window_5 [`COLORS][5:0];
-    // 6 sets of debug signals (2ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â8-bit each)
+    // 6 sets of debug signals (2ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â8-bit each)
     logic [7:0]                         debug_singals_0 [2];
     logic [7:0]                         debug_singals_1 [2];
     logic [7:0]                         debug_singals_2 [2];
@@ -52,7 +51,6 @@ module top_debug #(
     logic easy_clk;
 
     logic [TELEMETRY_VALUE_WIDTH-1:0]   main_telemetry_values [TELEMETRY_NUM_SIGNALS];
-    logic [TELEMETRY_VALUE_WIDTH-1:0]   telemetry_values      [GLOBAL_TELEMETRY_NUM_SIGNALS];
 
     logic game_clk;
     
@@ -110,12 +108,11 @@ module top_debug #(
     game_decoder #(
             .params(params), 
             .TELEMETRY_NUM_SIGNALS(2),  
-            .GLOBAL_TELEMETRY_NUM_SIGNALS(GLOBAL_TELEMETRY_NUM_SIGNALS),  
             .TELEMETRY_VALUE_WIDTH(TELEMETRY_VALUE_WIDTH),
             .TELEMETRY_BASE(TELEMETRY_BASE)
         ) Game_Decoder(
             .VGA_new_frame_ready, .VGA_frame, .pixel_x_target_next, .pixel_y_target_next, 
-            .pixel_value_next_R, .pixel_value_next_G, .pixel_value_next_B, .v_sync, .main_telemetry_values,
+            .pixel_value_next_R, .pixel_value_next_G, .pixel_value_next_B, .v_sync, .telemetry_values(main_telemetry_values),
             .debug_window_0,
             .debug_window_1,
             .debug_window_2,
@@ -123,15 +120,13 @@ module top_debug #(
             .debug_window_4,
             .debug_window_5,
 
-            // 6 sets of debug signals (2ÃƒÆ’Ã¢â‚¬â€8-bit each)
+            // 6 sets of debug signals (2ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â8-bit each)
             .debug_singals_0,
             .debug_singals_1,
             .debug_singals_2,
             .debug_singals_3,
             .debug_singals_4,
-            .debug_singals_5,
-
-            .telemetry_values
+            .debug_singals_5        
         );
 
     //game_encoder Game_Encoder(.GAME_new_frame_ready(), .GAME_next_frame, .GAME_frame_select(spi_data[3:0]));
@@ -153,8 +148,7 @@ module top_debug #(
     game_executioner #(
             .TELEMETRY_NUM_SIGNALS(2),    
             .TELEMETRY_VALUE_WIDTH(TELEMETRY_VALUE_WIDTH),
-            .TELEMETRY_BASE(TELEMETRY_BASE),
-            .GLOBAL_TELEMETRY_NUM_SIGNALS(GLOBAL_TELEMETRY_NUM_SIGNALS)
+            .TELEMETRY_BASE(TELEMETRY_BASE)
         )Game_Executioner(
             .reset(~reset_n), 
             .move_clk(spi_data_new_stalled), 
@@ -171,14 +165,13 @@ module top_debug #(
             .debug_window_4,
             .debug_window_5,
 
-            // 6 sets of debug signals (2ÃƒÆ’Ã¢â‚¬â€8-bit each)
+            // 6 sets of debug signals (2ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â8-bit each)
             .debug_singals_0,
             .debug_singals_1,
             .debug_singals_2,
             .debug_singals_3,
             .debug_singals_4,
-            .debug_singals_5,
-            .telemetry_values
+            .debug_singals_5
             );
 
     spi SPI(.reset(~reset_n), .clk(HSOSC_clk), .sck, .sdi, .sdo, .ce, .clear(invalidate_spi_data), .data(spi_data), .data_valid(spi_data_valid));

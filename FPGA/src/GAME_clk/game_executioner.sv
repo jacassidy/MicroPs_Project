@@ -12,8 +12,7 @@ localparam int BOARD_HEIGHT = 20;
 module game_executioner #(
     parameter int                                   TELEMETRY_NUM_SIGNALS,    
     parameter int                                   TELEMETRY_VALUE_WIDTH,
-    parameter int                                   TELEMETRY_BASE,
-    parameter int                                   GLOBAL_TELEMETRY_NUM_SIGNALS
+    parameter int                                   TELEMETRY_BASE
 )(
         input   logic                               reset,
         input   logic                               clk,
@@ -34,15 +33,13 @@ module game_executioner #(
         output  logic [5:0]                         debug_window_4 [`COLORS][5:0],
         output  logic [5:0]                         debug_window_5 [`COLORS][5:0],
 
-        // 6 sets of debug signals (2ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â8-bit each)
+        // 6 sets of debug signals (2ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â8-bit each)
         output  logic [7:0]                         debug_singals_0 [2],
         output  logic [7:0]                         debug_singals_1 [2],
         output  logic [7:0]                         debug_singals_2 [2],
         output  logic [7:0]                         debug_singals_3 [2],
         output  logic [7:0]                         debug_singals_4 [2],
-        output  logic [7:0]                         debug_singals_5 [2],
-
-        output  logic [TELEMETRY_VALUE_WIDTH-1:0]   telemetry_values [GLOBAL_TELEMETRY_NUM_SIGNALS]
+        output  logic [7:0]                         debug_singals_5 [2]
     );
 
     logic [7:0] count;
@@ -81,7 +78,7 @@ module game_executioner #(
         .debug_window_4,
         .debug_window_5,
 
-        // 6 sets of debug signals (2ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â8-bit each)
+        // 6 sets of debug signals (2ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â8-bit each)
         .debug_singals_0,
         .debug_singals_1,
         .debug_singals_2,
@@ -280,16 +277,16 @@ module game_executioner #(
 
     blit_piece Blit_Piece(.no_piece, .base_state(GAME_fixed_state), .active_piece_grid, .out_state(GAME_state));
 
-    assign telemetry_values[0] = active_piece.x - 4;
-    assign telemetry_values[1] = active_piece.y - 4;
+    // // assign telemetry_values[0] = (active_piece.x - 4);
+    // // assign telemetry_values[1] = (active_piece.y - 4);
 
-    assign telemetry_values[2] = count;
-    assign telemetry_values[3] = {1'(move_valid), 1'(move == tetris_pkg::CMD_LEFT), 1'(move == tetris_pkg::CMD_RIGHT), 1'(move == tetris_pkg::CMD_ROTATE)};
+    // // assign telemetry_values[2] = count;
+    // // assign telemetry_values[3] = {1'(move_valid), 1'(move == tetris_pkg::CMD_LEFT), 1'(move == tetris_pkg::CMD_RIGHT), 1'(move == tetris_pkg::CMD_ROTATE)};
     
-    assign telemetry_values[4] = {1'(game_clk_posedge_stalled), 1'(insert_new_piece), 1'(game_clk_posedge_stalled)};
-    assign telemetry_values[5] = no_piece;
+    // assign telemetry_values[0] = {1'(game_clk_posedge_stalled), 1'(insert_new_piece), 1'(game_clk_posedge_stalled)};
+    // assign telemetry_values[1] = no_piece;
 
-    assign telemetry_values[6] = insert_new_piece;
+    // assign telemetry_values[6] = insert_new_piece;
 
 
 endmodule
