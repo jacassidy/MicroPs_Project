@@ -6,7 +6,7 @@
 ////`include "parameters.svh"
 `define COLORS 3
 
-module top_debug #(
+module top_tetris #(
     parameter vga_pkg::vga_params_t params                = vga_pkg::VGA_640x480_60,
     parameter int                   TELEMETRY_NUM_SIGNALS = 2,
     parameter int                   TELEMETRY_VALUE_WIDTH = 8,
