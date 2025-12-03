@@ -172,12 +172,6 @@ module top_tetris #(
         .debug_singals_5 (debug_singals_5)
     );
 
-    // game_encoder Game_Encoder(
-    //     .GAME_new_frame_ready(),
-    //     .GAME_next_frame,
-    //     .GAME_frame_select(spi_data[3:0])
-    // );
-
     tetris_pkg::active_piece_t new_piece;
 
     synchronizer #(

@@ -19,11 +19,19 @@ module spi #(
 );
 
     logic             ce_q;  // previous value of ce in sck domain
+    logic             synced_sclk;
 
     logic [WIDTH:0] shift_reg;
     //logic [WIDTH-1:0] shift_reg;
+    synchronizer #(
+        .bits(1)
+    ) Sclk_sync (
+        .clk               (clk),
+        .raw_input         (sck),
+        .synchronized_value(synced_sclk)
+    );
     
-    always_ff @(posedge sck) begin
+    always_ff @(posedge synced_sclk) begin
         if (reset) begin
              shift_reg  <= 0;
              ce_q       <= 1'b0;

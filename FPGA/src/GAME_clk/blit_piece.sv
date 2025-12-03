@@ -34,13 +34,13 @@ module blit_piece (
 
                         // If this row is on-screen vertically
                         if (by >= 0 && by < 20) begin
-                            column_mask[by] = 1'b1;
+                            column_mask[by] = ~no_piece;
                         end
                     end
                 end
 
                 // OR the piece pixels into just this column
-                out_state.screen[bx] = base_state.screen[bx] | (~no_piece & column_mask);
+                out_state.screen[bx] = base_state.screen[bx] | (column_mask);
             end
         end
     end
