@@ -13,6 +13,7 @@ Date: 11/6/25
 #include "main.h"
 #include "STM32L432KC_SPI.h"
 #include "random.h"
+#include "stm32l4xx.h"
 
 //// ---- Global variables ---- ////
 
@@ -25,6 +26,10 @@ USART_TypeDef * USART;
 // Buffer for a single key event (max 3 bytes, but we only use 1–2 here)
 uint8_t request[3];
 
+// Mailbox for one completed PS/2 event assembled by the ISR
+volatile uint8_t g_ps2_req[3];
+volatile uint8_t g_ps2_len          = 0;
+volatile uint8_t g_ps2_event_ready  = 0;
 /////////////////////////////////////////////////////////////////
 // Scan code decoding (Set 2 -> printable char)
 /////////////////////////////////////////////////////////////////
@@ -241,40 +246,26 @@ uint8_t keyboard_get_key_state(char key) {
     return 0;
 }
 
-void scanKeyboard(){
-  int req_len = 0;
-  if (USART->ISR & USART_ISR_RXNE) {
-      uint8_t b0 = (uint8_t) readChar(USART);
+void scanKeyboard(void){
+    // If no new event from ISR, nothing to do
+    if (!g_ps2_event_ready) {
+        return;
+    }
 
-      // ------------------------------------------------------------
-      // Handle Scan Code Set 2 prefix rules based on Technoblogy:
-      //  - 0xF0 prefix = break (key released)
-      //  - 0xE0 prefix = extended key
-      //  We only want "make" codes (key pressed) to print.
-      // ------------------------------------------------------------
+    uint8_t local_req[3];
+    uint8_t local_len;
 
-     char readCharecter = readChar(USART);
+    // Critical section: copy the mailbox and clear the flag
+    __disable_irq();
+    local_len = g_ps2_len;
+    for (uint8_t i = 0; i < local_len; i++) {
+        local_req[i] = g_ps2_req[i];
+    }
+    g_ps2_event_ready = 0;
+    __enable_irq();
 
-      request[req_len++] =  readCharecter;
-      if (readCharecter == 0xE0) {
-        // extend key singal, get next
-        while(!(USART->ISR & USART_ISR_RXNE));
-        readCharecter = readChar(USART);
-        request[req_len++] =  readCharecter;
-        }
-      if (readCharecter == 0xF0) {
-        // Release key signal, get next
-        while(!(USART->ISR & USART_ISR_RXNE));
-        readCharecter = readChar(USART);
-        request[req_len++] =  readCharecter;
-      }
-
-      // new key press established
-
-      //printKey(request, req_len);
-
-      keyboard_update_state(request, req_len);
-  }
+    // Now decode and update keyboard state outside the ISR
+    keyboard_update_state(local_req, local_len);
 }
 
 
@@ -310,6 +301,12 @@ int main(void) {
 
     USART = initUSART(USART1_ID, 11500);
 
+    // Enable RXNE interrupt on this USART
+    USART->CR1 |= USART_CR1_RXNEIE;
+
+    // Enable USART1 interrupt line in the NVIC
+    NVIC_EnableIRQ(USART1_IRQn);
+
     int counter = 0;
 
     begin_timer(TIM15, 1000);
@@ -317,7 +314,7 @@ int main(void) {
     while (1) {
       // Check if we have a new byte from the keyboard
       scanKeyboard();
-      
+
       if (check_timer(TIM15)){
         int key_value     = 0;
         bool key_pressed  = false;
@@ -335,13 +332,13 @@ int main(void) {
           key_pressed = true;
         }
 
-        printf("keyvalue  %d \n",key_value);
-        printf("keypressed   %d \n",key_pressed);
-        printf("counter   %d \n",counter);
+        //printf("keyvalue  %d \n",key_value);
+        //printf("keypressed   %d \n",key_pressed);
+        //printf("counter   %d \n",counter);
 
          // // Update string with current LED state
         counter += 1;
-        if (key_pressed) {
+        //if (key_pressed) {
           uint32_t randnum = getRandomNumber();
           while ((randnum & 0x07) == 7){
             randnum = getRandomNumber();
@@ -350,11 +347,93 @@ int main(void) {
           enable_cs();
           spiSendReceive(0xFF & ((uint8_t)key_pressed << (2 + 3) | ((uint8_t)(randnum& 0x07) << 2) | (uint8_t)key_value));
           disable_cs();
-        }
+        //}
 
         begin_timer(TIM15, 1000);
       }
     }
 
       //delay_millis(TIM16, 10);
+}
+
+
+void USART1_IRQHandler(void) {
+    // Read status and data if RXNE is set
+    if (USART1->ISR & USART_ISR_RXNE) {
+        uint8_t b = (uint8_t) USART1->RDR;  // reading RDR clears RXNE
+
+        // Simple state machine to assemble Scan Code Set 2 sequences
+        static uint8_t acc[3];
+        static uint8_t acc_len = 0;
+
+        if (acc_len == 0) {
+            acc[0] = b;
+            acc_len = 1;
+
+            // Simple 1-byte make (no prefix)
+            if (b != 0xE0 && b != 0xF0) {
+                if (!g_ps2_event_ready) {
+                    g_ps2_req[0] = b;
+                    g_ps2_len    = 1;
+                    g_ps2_event_ready = 1;
+                }
+                acc_len = 0;
+            }
+        } else if (acc_len == 1) {
+            acc[1] = b;
+            acc_len = 2;
+
+            if (acc[0] == 0xE0) {
+                // [0xE0, code] extended make OR [0xE0, 0xF0] extended break prefix
+                if (b == 0xF0) {
+                    // Extended break prefix, need one more byte
+                    // keep acc_len = 2
+                } else {
+                    // Extended make: [0xE0, code]
+                    if (!g_ps2_event_ready) {
+                        g_ps2_req[0] = 0xE0;
+                        g_ps2_req[1] = b;
+                        g_ps2_len    = 2;
+                        g_ps2_event_ready = 1;
+                    }
+                    acc_len = 0;
+                }
+            } else if (acc[0] == 0xF0) {
+                // Normal break: [0xF0, code]
+                if (!g_ps2_event_ready) {
+                    g_ps2_req[0] = 0xF0;
+                    g_ps2_req[1] = b;
+                    g_ps2_len    = 2;
+                    g_ps2_event_ready = 1;
+                }
+                acc_len = 0;
+            } else {
+                // Unexpected, treat second byte as standalone
+                if (!g_ps2_event_ready) {
+                    g_ps2_req[0] = b;
+                    g_ps2_len    = 1;
+                    g_ps2_event_ready = 1;
+                }
+                acc_len = 0;
+            }
+        } else if (acc_len == 2) {
+            acc[2] = b;
+
+            // Extended break: [0xE0, 0xF0, code]
+            if (acc[0] == 0xE0 && acc[1] == 0xF0) {
+                if (!g_ps2_event_ready) {
+                    g_ps2_req[0] = 0xE0;
+                    g_ps2_req[1] = 0xF0;
+                    g_ps2_req[2] = b;
+                    g_ps2_len    = 3;
+                    g_ps2_event_ready = 1;
+                }
+            }
+
+            // Done
+            acc_len = 0;
+        }
+    }
+
+    // (If you care about overrun errors etc., you could clear them here too)
 }
