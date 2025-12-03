@@ -288,5 +288,8 @@ module game_executioner #(
 
     // assign telemetry_values[6] = insert_new_piece;
 
+    assign debug_singals_4[0] = no_piece;
+    //debug_singals_5
+
 
 endmodule
