@@ -289,6 +289,8 @@ module game_executioner #(
     // assign telemetry_values[6] = insert_new_piece;
 
     assign debug_singals_4[0] = no_piece;
+    assign debug_singals_4[1] = clearing_line;
+    assign debug_singals_5[0] = clearing_line_next;
     //debug_singals_5
 
 

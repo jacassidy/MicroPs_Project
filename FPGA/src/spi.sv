@@ -29,14 +29,15 @@ module spi #(
 
     logic             ce_q;  // previous value of ce in sck domain
 
-    logic [WIDTH-1:0] shift_reg;
+    logic [WIDTH:0] shift_reg;
+    //logic [WIDTH-1:0] shift_reg;
     
     always_ff @(posedge sck) begin
         if (reset) begin
              shift_reg  <= 0;
              ce_q       <= 1'b0;
         end else begin
-            if (ce) shift_reg[WIDTH-1:0] <= {shift_reg[WIDTH-2:0], sdi};
+            if (ce) shift_reg[WIDTH:0] <= {shift_reg[WIDTH-1:0], sdi}; //shift_reg[WIDTH-1:0] <= {shift_reg[WIDTH-2:0], sdi};
             // remember previous CE to detect edge
             ce_q <= ce;
         end
@@ -54,7 +55,8 @@ module spi #(
             if (ce) new_transaction <= 1'b1;
             // "chip de_enables" in your wording
             if (ce_q & ~ce & new_transaction) begin
-                data       <= shift_reg;
+                //data       <= shift_reg[WIDTH:1];
+                data       <= shift_reg[WIDTH-1:0];
                 data_valid <= 1'b1;
 
                 new_transaction <= 1'b0;

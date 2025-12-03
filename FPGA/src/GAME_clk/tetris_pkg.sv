@@ -8,13 +8,13 @@ package tetris_pkg;
 
   // 7 classic Tetris pieces, but we can start with fewer if you want
   typedef enum logic [2:0] {
-    PIECE_I,
-    PIECE_O,
-    PIECE_T,
-    PIECE_L,
-    PIECE_J,
-    PIECE_S,
-    PIECE_Z
+    PIECE_I = 3'd0,
+    PIECE_T = 3'd1,
+    PIECE_L = 3'd2,
+    PIECE_J = 3'd3,
+    PIECE_S = 3'd4,
+    PIECE_Z = 3'd5,
+    PIECE_O = 3'd6
   } piece_type_t;
 
   typedef enum logic [1:0] {
