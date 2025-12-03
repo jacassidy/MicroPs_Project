@@ -389,18 +389,24 @@ int main(void) {
           // key_value = 1 for Up
           send_spi_word(1, 1);
       }
-      if (down_now && !last_down) {
+      else if (down_now && !last_down) {
           // key_value = 0 for Down
           send_spi_word(1, 0);
       }
-      if (left_now && !last_left) {
+      else if (left_now && !last_left) {
           // key_value = 2 for Left
           send_spi_word(1, 2);
       }
-      if (right_now && !last_right) {
+      else if (right_now && !last_right) {
           // key_value = 3 for Right
           send_spi_word(1, 3);
       }
+
+      if (check_timer(TIM15)) {
+          update_random3();          // refresh global random
+          //send_spi_word(0, 0);       // periodic “no key” packet
+          begin_timer(TIM15, 5000);
+        }
 
       // Update last states for next iteration
       last_up    = up_now;
@@ -409,11 +415,7 @@ int main(void) {
       last_right = right_now;
 
       // --------- Periodic random update via TIM15 ---------
-      if (check_timer(TIM15)) {
-          update_random3();          // refresh global random
-          send_spi_word(0, 0);       // periodic “no key” packet
-          begin_timer(TIM15, 10000);
-      }
+      
   }
 
       //delay_millis(TIM16, 10);
