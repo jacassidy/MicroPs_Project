@@ -47,12 +47,14 @@ module spi #(
 
     always_ff @(posedge clk) begin
         if (reset) begin
-            data       <= '0;
+            //data       <= '0;
             data_valid <= 1'b0;
             new_transaction <= 1'b0;
         end else begin
         // detect CE de-assert (1 -> 0) and latch new data
-            if (ce) new_transaction <= 1'b1;
+            if (ce) begin
+                new_transaction <= 1'b1;
+            end
             // "chip de_enables" in your wording
             if (ce_q & ~ce & new_transaction) begin
                 //data       <= shift_reg[WIDTH:1];

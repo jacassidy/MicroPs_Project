@@ -35,7 +35,7 @@ module top_debug #(
     logic [5:0]                         debug_window_3 [`COLORS][5:0];
     logic [5:0]                         debug_window_4 [`COLORS][5:0];
     logic [5:0]                         debug_window_5 [`COLORS][5:0];
-    // 6 sets of debug signals (2ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â8-bit each)
+    // 6 sets of debug signals (2ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â8-bit each)
     logic [7:0]                         debug_singals_0 [2];
     logic [7:0]                         debug_singals_1 [2];
     logic [7:0]                         debug_singals_2 [2];
@@ -120,7 +120,7 @@ module top_debug #(
             .debug_window_4,
             .debug_window_5,
 
-            // 6 sets of debug signals (2ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â8-bit each)
+            // 6 sets of debug signals (2ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â8-bit each)
             .debug_singals_0,
             .debug_singals_1,
             .debug_singals_2,
@@ -165,7 +165,7 @@ module top_debug #(
             .debug_window_4,
             .debug_window_5,
 
-            // 6 sets of debug signals (2ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â8-bit each)
+            // 6 sets of debug signals (2ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â8-bit each)
             .debug_singals_0,
             .debug_singals_1,
             .debug_singals_2,
@@ -200,9 +200,9 @@ module top_debug #(
         else            clk_count <= clk_count + 1;
     end
 
-    assign game_clk = external_clk_sync_debounce;
+    // assign game_clk = external_clk_sync_debounce;
     //assign game_clk = 1'b1;
-    // assign game_clk = clk_divided;
+    assign game_clk = clk_divided;
 
     assign debug_led = game_clk;
 

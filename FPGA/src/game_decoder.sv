@@ -26,7 +26,7 @@ module game_decoder #(
     input   logic [5:0]                         debug_window_4 [COLORS][5:0],
     input   logic [5:0]                         debug_window_5 [COLORS][5:0],
 
-    // 6 sets of debug signals (2Ã—8-bit each)
+    // 6 sets of debug signals (2Ãƒâ€”8-bit each)
     input   logic [7:0]                         debug_singals_0 [2],
     input   logic [7:0]                         debug_singals_1 [2],
     input   logic [7:0]                         debug_singals_2 [2],
@@ -93,7 +93,7 @@ module game_decoder #(
     // ------------------------------------------------------------
     // Main 10x20 game panel (panel index 0)
     // ------------------------------------------------------------
-    blit_screen #(
+    blit_screen_no_telemetry #(
         .params                (params),
         .X0                    (MAIN_X0),
         .Y0                    (MAIN_Y0),
@@ -127,7 +127,7 @@ module game_decoder #(
     // Helper macro to instantiate a 6x6 debug panel
     // ------------------------------------------------------------
 `define INSTANTIATE_DEBUG_PANEL(INST_NAME, INDEX, XPOS, YPOS, DBG_WIN, DBG_SIGS) \
-    blit_screen #( \
+    blit_screen_no_telemetry #( \
         .params                (params), \
         .X0                    (XPOS), \
         .Y0                    (YPOS), \
@@ -157,18 +157,18 @@ module game_decoder #(
     )
 
     // ------------------------------------------------------------
-    // 3 mini panels on the left (indices 1â€“3)
+    // 3 mini panels on the left (indices 1Ã¢â‚¬â€œ3)
     // ------------------------------------------------------------
-    `INSTANTIATE_DEBUG_PANEL(u_mini_panel_L0, 1, LEFT_X0,  MINI_Y0_0, debug_window_0, debug_singals_0);
-    `INSTANTIATE_DEBUG_PANEL(u_mini_panel_L1, 2, LEFT_X0,  MINI_Y0_1, debug_window_1, debug_singals_1);
-    `INSTANTIATE_DEBUG_PANEL(u_mini_panel_L2, 3, LEFT_X0,  MINI_Y0_2, debug_window_2, debug_singals_2);
+    `INSTANTIATE_DEBUG_PANEL(u_mini_panel_L0, 1, LEFT_X0,  MINI_Y0_1, debug_window_0, debug_singals_0);
+    `INSTANTIATE_DEBUG_PANEL(u_mini_panel_L1, 2, LEFT_X0,  MINI_Y0_2, debug_window_1, debug_singals_1);
+    `INSTANTIATE_DEBUG_PANEL(u_mini_panel_L2, 3, RIGHT_X0,  MINI_Y0_1, debug_window_2, debug_singals_2);
 
     // ------------------------------------------------------------
-    // 3 mini panels on the right (indices 4â€“6)
+    // 3 mini panels on the right (indices 4Ã¢â‚¬â€œ6)
     // ------------------------------------------------------------
-    `INSTANTIATE_DEBUG_PANEL(u_mini_panel_R0, 4, RIGHT_X0, MINI_Y0_0, debug_window_3, debug_singals_3);
-    `INSTANTIATE_DEBUG_PANEL(u_mini_panel_R1, 5, RIGHT_X0, MINI_Y0_1, debug_window_4, debug_singals_4);
-    `INSTANTIATE_DEBUG_PANEL(u_mini_panel_R2, 6, RIGHT_X0, MINI_Y0_2, debug_window_5, debug_singals_5);
+    `INSTANTIATE_DEBUG_PANEL(u_mini_panel_R0, 4, RIGHT_X0, MINI_Y0_2, debug_window_3, debug_singals_3);
+    // `INSTANTIATE_DEBUG_PANEL(u_mini_panel_R1, 5, RIGHT_X0, MINI_Y0_0, debug_window_4, debug_singals_4);
+    // `INSTANTIATE_DEBUG_PANEL(u_mini_panel_R2, 6, RIGHT_X0, MINI_Y0_2, debug_window_5, debug_singals_5);
 
 `undef INSTANTIATE_DEBUG_PANEL
 

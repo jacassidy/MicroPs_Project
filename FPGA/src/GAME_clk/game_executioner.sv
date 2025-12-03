@@ -89,7 +89,7 @@ module game_executioner #(
         .debug_singals_5()
     );
 
-    flopR_2clk #(.WIDTH(1)) No_Piece_flop(.clk_tree(clk), .target_clk(game_clk), .reset, .D(active_piece_toutching_bottom), .Q(no_piece));
+    flopR_2clk #(.WIDTH(1), .RESET(1)) No_Piece_flop(.clk_tree(clk), .target_clk(game_clk), .reset, .D(active_piece_toutching_bottom), .Q(no_piece));
 
     // a piece is floating when the active piece is not toutching, unless clearing (no piece is active at this time)
     flopRF_2clk #(.WIDTH(1)) Floating_Piece(.clk_tree(clk), .target_clk(game_clk), .reset, .flush(active_piece_toutching_bottom), .D(1'b1), .Q(floating_piece));
@@ -256,7 +256,7 @@ module game_executioner #(
     // ------------------------------------------------------------
     always_ff @(posedge clk) begin
         if (reset) begin
-            active_piece.x <= 4'd4;   // or new_piece.x, your call
+            active_piece.x <= 5'd7;   // or new_piece.x, your call
             active_piece.rotation <= tetris_pkg::ROT_0;
             count <= '0;
             game_clk_posedge_stalled <= '0;

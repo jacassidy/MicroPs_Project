@@ -112,7 +112,8 @@ endmodule
 // ------------------------------------------------------------
 
 module flopR_2clk #(
-    WIDTH = 32
+    WIDTH = 32,
+    RESET = 0
 ) (
     input  logic               clk_tree,
     input  logic               target_clk,
@@ -141,7 +142,7 @@ module flopR_2clk #(
     wire target_rise = target_sync & ~target_sync_d;
 
     always_ff @(posedge clk_tree) begin
-        if (reset)          Q <= '0;
+        if (reset)          Q <= RESET;
         else if (target_rise) Q <= D;
     end
 
