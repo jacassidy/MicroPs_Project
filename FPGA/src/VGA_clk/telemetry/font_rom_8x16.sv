@@ -1,4 +1,7 @@
 // font_rom_8x16.sv
+// James Kaden Cassidy 
+// kacassidy@hmce.edu
+// 12/2/2025
 //
 // Generic 8x16 bitmap font ROM.
 // Expects font8x16.hex with 256 chars * 16 rows = 4096 bytes,

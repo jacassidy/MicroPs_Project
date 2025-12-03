@@ -1,3 +1,7 @@
+// James Kaden Cassidy 
+// kacassidy@hmce.edu
+// 11/8/2025
+
 // pll_clk.sv (speed-only params; other strings hardcoded)
 // -------------------------------------------------------------------------------------
 // iCE40 UltraPlus PLL_B pixel clock generator.
@@ -5,9 +9,6 @@
 // f_out = f_ref * (DIVF+1) / ((DIVR+1) * 2^DIVQ)  when FEEDBACK_PATH="SIMPLE"
 // Reset tip: don't feed LOCK into RESET_N of the PLL. Use LOCK to release system reset.
 // -------------------------------------------------------------------------------------
-// James Kaden Cassidy 
-// kacassidy@hmce.edu
-// 11/8/2025
 
 module pll_clk #(
     // HSOSC divider: "0b00"=48, "0b01"=24, "0b10"=12, "0b11"=6 MHz

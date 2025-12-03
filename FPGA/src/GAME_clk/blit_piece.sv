@@ -12,11 +12,6 @@ module blit_piece (
     import game_state_pkg::*;
     import tetris_pkg::*;
 
-    // Assume: game_state_t is
-    // typedef struct {
-    //   logic [19:0] screen [9:0];  // screen[x][y]
-    // } game_state_t;
-
     always_comb begin : overlay_active_piece_comb
 
         int bx, dx, dy, by;

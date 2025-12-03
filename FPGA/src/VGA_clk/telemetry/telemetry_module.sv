@@ -1,4 +1,8 @@
 // telemetry_module.sv
+// James Kaden Cassidy 
+// kacassidy@hmce.edu
+// 12/2/2025
+
 //
 // Displays 7 lines of "LABEL: value" at the top-left using telemetry_box.
 //

@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
+
 """
+// James Kaden Cassidy 
+// kacassidy@hmce.edu
+// 12/2/2025
+
 make_font8x16_hex.py
 
 Offline helper to generate font8x16.hex for font_rom_8x16.sv.

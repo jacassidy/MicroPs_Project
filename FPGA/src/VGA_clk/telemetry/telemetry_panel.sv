@@ -1,5 +1,8 @@
 // telemetry_panel.sv
-//
+// James Kaden Cassidy 
+// kacassidy@hmce.edu
+// 12/2/2025
+
 // Wrapper that takes NUM_SIGNALS labels + values, formats
 // "LABEL: 123" style text, and renders it in a box near the top-left.
 //

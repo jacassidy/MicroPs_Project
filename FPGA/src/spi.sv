@@ -17,15 +17,6 @@ module spi #(
     output logic [WIDTH-1:0]  data,    // last completed word
     output logic              data_valid
 );
-    // logic [7:0] state;
-    // assign data = state;
-    
-    // always_ff @(posedge sck) begin
-    //     // if (reset)   state <= 0;
-    //     // else begin
-    //         if (ce) state[7:0] <= {state[6:0], sdi};
-    //     // end
-    // end
 
     logic             ce_q;  // previous value of ce in sck domain
 

@@ -54,9 +54,6 @@ module game_executioner #(
     logic clearing_line;
     logic no_piece;
 
-    // assign active_piece_toutching_left = 1'b0;
-    // assign active_piece_toutching_right = 1'b0;
-
     tetris_pkg::active_piece_t      active_piece;
 
     tetris_pkg::active_piece_grid_t active_piece_grid;
@@ -206,25 +203,6 @@ module game_executioner #(
             clearing_line           <= clearing_line_next;
         end
     end
-    // always_ff @(posedge game_clk) begin
-    //     if (reset) begin
-    //         GAME_fixed_state.screen <= game_state_pkg::blank_game_state.screen;
-    //         clearing_line           <= 1'b0;
-    //     end else if (active_piece_toutching_bottom) begin
-    //         GAME_fixed_state.screen <= fixed_state_next.screen;
-    //         clearing_line           <= clearing_line_next;
-    //     end else begin
-    //         // no new piece lock this cycle => no clear pulse
-    //         clearing_line           <= 1'b0;
-    //     end
-    // end
-
-
-	// always_ff @(posedge game_clk) begin
-	// 	if (reset)  GAME_fixed_state.screen <= game_state_pkg::blank_game_state.screen;
-    //     else if (active_piece_toutching_bottom)        
-    //                 GAME_fixed_state.screen <= GAME_state.screen;
-	// end
 	
     flopRE_2clk #(.WIDTH($bits({new_piece.piece_type}))) flop_Piece_State(.clk_tree(clk), .target_clk(game_clk), .reset, .en(insert_new_piece), 
                         .D({new_piece.piece_type}), 
@@ -291,22 +269,11 @@ module game_executioner #(
 
     blit_piece Blit_Piece(.no_piece, .base_state(GAME_fixed_state), .active_piece_grid, .out_state(GAME_state));
 
-    // // assign telemetry_values[0] = (active_piece.x - 4);
-    // // assign telemetry_values[1] = (active_piece.y - 4);
-
-    // // assign telemetry_values[2] = count;
-    // // assign telemetry_values[3] = {1'(move_valid), 1'(move == tetris_pkg::CMD_LEFT), 1'(move == tetris_pkg::CMD_RIGHT), 1'(move == tetris_pkg::CMD_ROTATE)};
-    
-    // assign telemetry_values[0] = {1'(game_clk_posedge_stalled), 1'(insert_new_piece), 1'(game_clk_posedge_stalled)};
-    // assign telemetry_values[1] = no_piece;
-
-    // assign telemetry_values[6] = insert_new_piece;
 
     assign debug_singals_4[0] = no_piece;
     assign debug_singals_4[1] = clearing_line;
     assign debug_singals_5[0] = clearing_line_next;
     assign debug_singals_5[1] = active_piece.y;
-    //debug_singals_5
 
 
 endmodule

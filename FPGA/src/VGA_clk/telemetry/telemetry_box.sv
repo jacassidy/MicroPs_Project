@@ -1,4 +1,8 @@
 // telemetry_box.sv
+// James Kaden Cassidy 
+// kacassidy@hmce.edu
+// 12/2/2025
+
 //
 // Text-mode overlay box using 8x16 characters.
 // Each "row" in chars[NUM_ROWS][NUM_COLS] is treated as one telemetry string.

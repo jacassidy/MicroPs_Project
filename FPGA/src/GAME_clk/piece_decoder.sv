@@ -22,14 +22,7 @@ module piece_decoder (
       '{1'b0, 1'b0, 1'b0, 1'b0}, // row 2
       '{1'b0, 1'b0, 1'b0, 1'b0}  // row 3
   };
-
-  // localparam piece_matrix_t I_BASE = '{
-  //     '{1'b1, 1'b1, 1'b1, 1'b1}, // row 0
-  //     '{1'b1, 1'b1, 1'b1, 1'b1}, // row 1
-  //     '{1'b1, 1'b1, 1'b1, 1'b1}, // row 2
-  //     '{1'b1, 1'b1, 1'b1, 1'b1}  // row 3
-  // };
-
+  
   localparam piece_matrix_t O_BASE = '{
       '{1'b0, 1'b0, 1'b0, 1'b0},
       '{1'b0, 1'b1, 1'b1, 1'b0},
