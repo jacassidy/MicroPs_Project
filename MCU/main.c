@@ -20,7 +20,13 @@ Date: 11/6/25
 // Latched state: 1 = this ASCII key has been pressed at least once
 // (you can change semantics later if you want edge-triggered behavior)
 #define KB_MAX_KEYS 128
+
 volatile uint8_t g_keyboard_state[KB_MAX_KEYS] = {0};
+volatile uint8_t g_random3 = 0;
+uint8_t last_up    = 0;
+uint8_t last_down  = 0;
+uint8_t last_left  = 0;
+uint8_t last_right = 0;
 
 USART_TypeDef * USART;
 // Buffer for a single key event (max 3 bytes, but we only use 1–2 here)
@@ -165,6 +171,7 @@ static char decode_scancode(const uint8_t *request, int len) {
 //
 // We convert these into a "make-style" temp buffer for decode_scancode()
 // and then set g_keyboard_state[ch] = 1 (press) or 0 (release).
+
 void keyboard_update_state(const uint8_t *request, int req_len) {
     if (req_len <= 0) return;
 
@@ -268,8 +275,30 @@ void scanKeyboard(void){
     keyboard_update_state(local_req, local_len);
 }
 
+static void update_random3(void) {
+    uint32_t r;
+    uint8_t  v;
 
+    do {
+        r = getRandomNumber();
+        v = r & 0x07;
+    } while (v == 7);    // avoid 7
 
+    g_random3 = v;
+}
+
+static void send_spi_word(uint8_t key_pressed, uint8_t key_value) {
+    // key_pressed: 0 or 1
+    // key_value:   0..3 encoding ^ v < >
+    uint8_t word =
+        (uint8_t)( ((key_pressed & 0x01) << (2 + 3)) | // bit 5
+                   ((g_random3 & 0x07) << 2)        | // bits 4..2
+                   (key_value & 0x03) );              // bits 1..0
+
+    enable_cs();
+    spiSendReceive(0xFF & word);
+    disable_cs();
+}
 /////////////////////////////////////////////////////////////////
 // Solution Functions
 /////////////////////////////////////////////////////////////////
@@ -312,46 +341,46 @@ int main(void) {
     begin_timer(TIM15, 1000);
 
     while (1) {
-      // Check if we have a new byte from the keyboard
-      scanKeyboard();
+    // Keep keyboard state up to date from ISR mailbox
+    scanKeyboard();
 
-      if (check_timer(TIM15)){
-        int key_value     = 0;
-        bool key_pressed  = false;
-        if (keyboard_get_key_state('^')) {
-          key_value = 0;
-          key_pressed = true;
-        }else if(keyboard_get_key_state('v')) {
-          key_value = 1;
-          key_pressed = true;
-        }else if(keyboard_get_key_state('<')) {
-          key_value = 2;
-          key_pressed = true;
-        }else if(keyboard_get_key_state('>')) {
-          key_value = 3;
-          key_pressed = true;
-        }
+    // --------- Edge-detect arrow key presses ---------
+    uint8_t up_now    = keyboard_get_key_state('^');
+    uint8_t down_now  = keyboard_get_key_state('v');
+    uint8_t left_now  = keyboard_get_key_state('<');
+    uint8_t right_now = keyboard_get_key_state('>');
 
-        //printf("keyvalue  %d \n",key_value);
-        //printf("keypressed   %d \n",key_pressed);
-        //printf("counter   %d \n",counter);
-
-         // // Update string with current LED state
-        counter += 1;
-        //if (key_pressed) {
-          uint32_t randnum = getRandomNumber();
-          while ((randnum & 0x07) == 7){
-            randnum = getRandomNumber();
-          }
-          //printf("%d",randnum);
-          enable_cs();
-          spiSendReceive(0xFF & ((uint8_t)key_pressed << (2 + 3) | ((uint8_t)(randnum& 0x07) << 2) | (uint8_t)key_value));
-          disable_cs();
-        //}
-
-        begin_timer(TIM15, 1000);
-      }
+    // Up arrow pressed now, wasn’t down before
+    if (up_now && !last_up) {
+        // key_value = 0 for Up (same mapping you already had)
+        send_spi_word(1, 0);
     }
+    if (down_now && !last_down) {
+        // key_value = 1 for Down
+        send_spi_word(1, 1);
+    }
+    if (left_now && !last_left) {
+        // key_value = 2 for Left
+        send_spi_word(1, 2);
+    }
+    if (right_now && !last_right) {
+        // key_value = 3 for Right
+        send_spi_word(1, 3);
+    }
+
+    // Update last states for next iteration
+    last_up    = up_now;
+    last_down  = down_now;
+    last_left  = left_now;
+    last_right = right_now;
+
+    // --------- Periodic random update via TIM15 ---------
+    if (check_timer(TIM15)) {
+        update_random3();          // refresh global random
+        send_spi_word(0, 0);       // periodic “no key” packet
+        begin_timer(TIM15, 1000);
+    }
+}
 
       //delay_millis(TIM16, 10);
 }
@@ -365,7 +394,7 @@ void USART1_IRQHandler(void) {
         // Simple state machine to assemble Scan Code Set 2 sequences
         static uint8_t acc[3];
         static uint8_t acc_len = 0;
-
+        printf("interupt");
         if (acc_len == 0) {
             acc[0] = b;
             acc_len = 1;
