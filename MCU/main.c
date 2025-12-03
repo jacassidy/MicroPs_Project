@@ -36,6 +36,8 @@ uint8_t request[3];
 volatile uint8_t g_ps2_req[3];
 volatile uint8_t g_ps2_len          = 0;
 volatile uint8_t g_ps2_event_ready  = 0;
+
+int count = 0; 
 /////////////////////////////////////////////////////////////////
 // Scan code decoding (Set 2 -> printable char)
 /////////////////////////////////////////////////////////////////
@@ -186,7 +188,7 @@ void keyboard_update_state(const uint8_t *request, int req_len) {
         is_break = 0;
         temp[0] = request[0];
         tlen    = 1;
-        printf("key pressed: %x %x %x\n",request[2], request[1], request[0]);
+        //printf("key pressed: %x %x %x\n",request[2], request[1], request[0]);
     } else if (req_len == 2) {
         if (request[0] == 0xE0) {
             // Extended make: [0xE0, code]
@@ -194,19 +196,19 @@ void keyboard_update_state(const uint8_t *request, int req_len) {
             temp[0] = 0xE0;
             temp[1] = request[1];
             tlen    = 2;
-            printf("Key released: %x %x %x\n",request[2], request[1], request[0]);
+            //printf("Key released: %x %x %x\n",request[2], request[1], request[0]);
         } else if (request[0] == 0xF0) {
             // Normal break: [0xF0, code]
             is_break = 1;
             temp[0]  = request[1];  // decode like a normal 1-byte make
             tlen     = 1;
-            printf("Extneded key pressed: %x %x %x\n",request[2], request[1], request[0]);
+            //printf("Extneded key pressed: %x %x %x\n",request[2], request[1], request[0]);
         } else {
             // Fallback: treat as make of last byte
             is_break = 0;
             temp[0]  = request[req_len - 1];
             tlen     = 1;
-            printf("error should not occur 0: %x %x %x\n",request[2], request[1], request[0]);
+            //printf("error should not occur 0: %x %x %x\n",request[2], request[1], request[0]);
         }
 
     } else if (req_len == 3) {
@@ -216,20 +218,20 @@ void keyboard_update_state(const uint8_t *request, int req_len) {
             temp[0]  = 0xE0;
             temp[1]  = request[2];
             tlen     = 2;
-            printf("Extneded key released: %x %x %x\n",request[2], request[1], request[0]);
+            //printf("Extneded key released: %x %x %x\n",request[2], request[1], request[0]);
         } else {
             // Fallback: best effort – treat last as simple code
             is_break = 0;
             temp[0]  = request[req_len - 1];
             tlen     = 1;
-            printf("error should not occur 1: %x %x %x\n",request[2], request[1], request[0]);
+            //printf("error should not occur 1: %x %x %x\n",request[2], request[1], request[0]);
         }
     } else {
         // Unexpected length, best-effort decode last byte
         is_break = 0;
         temp[0]  = request[req_len - 1];
         tlen     = 1;
-        printf("error should not occur 2: %x %x %x\n",request[2], request[1], request[0]);
+        //printf("error should not occur 2: %x %x %x\n",request[2], request[1], request[0]);
     }
 
     // --------- Map to a printable "key" using your existing decoder ---------
@@ -240,7 +242,19 @@ void keyboard_update_state(const uint8_t *request, int req_len) {
     if (idx >= KB_MAX_KEYS) return;
 
     // --------- Update global pressed/released state ---------
-    g_keyboard_state[idx] = is_break ? 0 : 1;
+    if(is_break){
+      g_keyboard_state[idx] = 0;
+    } else {
+      if (check_timer(TIM16)) {
+        g_keyboard_state[idx] = 1;
+        printf("press \n %d", count);
+        count = count +1 ; 
+        begin_timer(TIM16, 100);
+      }else {
+        g_keyboard_state[idx] = 0;
+      }
+    }
+    
 }
 
 
@@ -303,7 +317,7 @@ static void send_spi_word(uint8_t key_pressed, uint8_t key_value) {
     // First build the payload (no parity yet)
     uint8_t payload =
         (uint8_t)( ((key_pressed & 0x01) << 5) |   // bit 5
-                   ((g_random3   & 0x07) << 2) |   // bits 4..2
+                   (( g_random3  & 0x07) << 2) |   // bits 4..2    
                    ( key_value   & 0x03) );        // bits 1..0
 
     // Compute even parity over the payload bits
@@ -333,8 +347,9 @@ int main(void) {
     //digitalWrite(RESET_N, 0);
 
     RCC->APB2ENR |= (RCC_APB2ENR_TIM15EN);
+    RCC->APB2ENR |= (RCC_APB2ENR_TIM16EN);
     initTIM(TIM15);
-    //initTIM(TIM16);
+    initTIM(TIM16);
     //delay_millis(TIM15, 1000);
 
     RCC->APB2ENR |= (1 << 12); // ENABLE SPI1
@@ -357,48 +372,49 @@ int main(void) {
     int counter = 0;
 
     begin_timer(TIM15, 1000);
+    begin_timer(TIM16, 1000);
 
     while (1) {
-    // Keep keyboard state up to date from ISR mailbox
-    scanKeyboard();
+      // Keep keyboard state up to date from ISR mailbox
+      scanKeyboard();
 
-    // --------- Edge-detect arrow key presses ---------
-    uint8_t up_now    = keyboard_get_key_state('I');
-    uint8_t down_now  = keyboard_get_key_state('K');
-    uint8_t left_now  = keyboard_get_key_state('J');
-    uint8_t right_now = keyboard_get_key_state('L');
+      // --------- Edge-detect arrow key presses ---------
+      uint8_t up_now    = keyboard_get_key_state('^');
+      uint8_t down_now  = keyboard_get_key_state('v');
+      uint8_t left_now  = keyboard_get_key_state('<');
+      uint8_t right_now = keyboard_get_key_state('>');
 
-    // Up arrow pressed now, wasn’t down before
-    if (up_now && !last_up) {
-        // key_value = 0 for Up (same mapping you already had)
-        send_spi_word(1, 0);
-    }
-    if (down_now && !last_down) {
-        // key_value = 1 for Down
-        send_spi_word(1, 1);
-    }
-    if (left_now && !last_left) {
-        // key_value = 2 for Left
-        send_spi_word(1, 2);
-    }
-    if (right_now && !last_right) {
-        // key_value = 3 for Right
-        send_spi_word(1, 3);
-    }
+      // Up arrow pressed now, wasn’t down before
+      if (up_now && !last_up) {
+          // key_value = 1 for Up
+          send_spi_word(1, 1);
+      }
+      if (down_now && !last_down) {
+          // key_value = 0 for Down
+          send_spi_word(1, 0);
+      }
+      if (left_now && !last_left) {
+          // key_value = 2 for Left
+          send_spi_word(1, 2);
+      }
+      if (right_now && !last_right) {
+          // key_value = 3 for Right
+          send_spi_word(1, 3);
+      }
 
-    // Update last states for next iteration
-    last_up    = up_now;
-    last_down  = down_now;
-    last_left  = left_now;
-    last_right = right_now;
+      // Update last states for next iteration
+      last_up    = up_now;
+      last_down  = down_now;
+      last_left  = left_now;
+      last_right = right_now;
 
-    // --------- Periodic random update via TIM15 ---------
-    if (check_timer(TIM15)) {
-        update_random3();          // refresh global random
-        send_spi_word(0, 0);       // periodic “no key” packet
-        begin_timer(TIM15, 1000);
-    }
-}
+      // --------- Periodic random update via TIM15 ---------
+      if (check_timer(TIM15)) {
+          update_random3();          // refresh global random
+          send_spi_word(0, 0);       // periodic “no key” packet
+          begin_timer(TIM15, 10000);
+      }
+  }
 
       //delay_millis(TIM16, 10);
 }
@@ -412,7 +428,7 @@ void USART1_IRQHandler(void) {
         // Simple state machine to assemble Scan Code Set 2 sequences
         static uint8_t acc[3];
         static uint8_t acc_len = 0;
-        printf("interupt");
+        //printf("interupt");
         if (acc_len == 0) {
             acc[0] = b;
             acc_len = 1;
