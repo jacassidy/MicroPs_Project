@@ -34,7 +34,7 @@ module top_debug #(
     logic [5:0]                         debug_window_3 [`COLORS][5:0];
     logic [5:0]                         debug_window_4 [`COLORS][5:0];
     logic [5:0]                         debug_window_5 [`COLORS][5:0];
-    // 6 sets of debug signals (2Ã—8-bit each)
+    // 6 sets of debug signals (2Ãƒâ€”8-bit each)
     logic [7:0]                         debug_singals_0 [2];
     logic [7:0]                         debug_singals_1 [2];
     logic [7:0]                         debug_singals_2 [2];
@@ -58,7 +58,7 @@ module top_debug #(
     logic spi_data_new_stalled;
 
     // VGA Signals
-    logic   HSOSC_clk, VGA_clk;
+    logic   HSOSC_clk, VGA_clk, LSOSC_clk;
     logic   pixel_value_next_R, pixel_value_next_G, pixel_value_next_B;
 
     logic[params.pixel_x_bits-1:0] pixel_x_target_next;
@@ -97,7 +97,8 @@ module top_debug #(
         .pixel_signal_G, // core will gate to visible region
         .pixel_signal_B, // core will gate to visible region
         .VGA_clk,
-        .HSOSC_clk
+        .HSOSC_clk,
+        .LSOSC_clk
     );
 
     state_manager State_Manager(.reset(1'b0), .VGA_new_frame_ready, .GAME_new_frame_ready, 
@@ -118,7 +119,7 @@ module top_debug #(
             .debug_window_4,
             .debug_window_5,
 
-            // 6 sets of debug signals (2×8-bit each)
+            // 6 sets of debug signals (2Ã—8-bit each)
             .debug_singals_0,
             .debug_singals_1,
             .debug_singals_2,
@@ -163,7 +164,7 @@ module top_debug #(
             .debug_window_4,
             .debug_window_5,
 
-            // 6 sets of debug signals (2×8-bit each)
+            // 6 sets of debug signals (2Ã—8-bit each)
             .debug_singals_0,
             .debug_singals_1,
             .debug_singals_2,
@@ -188,16 +189,16 @@ module top_debug #(
 
     clock_divider #(.div_count(30000000)) Clock_Divider(.clk(HSOSC_clk), .reset(~reset_n), .clk_divided);
 
-    clock_divider #(.div_count(1000)) Clock_Divider2(.clk(HSOSC_clk), .reset(~reset_n), .clk_divided(easy_clk));
+    assign easy_clk = LSOSC_clk;
 
     always_ff @(posedge game_clk) begin
         if (~reset_n)   clk_count <= 0;
         else            clk_count <= clk_count + 1;
     end
 
-    assign game_clk = external_clk_sync_debounce;
+    // assign game_clk = external_clk_sync_debounce;
     //assign game_clk = 1'b1;
-    // assign game_clk = clk_divided;
+    assign game_clk = clk_divided;
 
     assign debug_led = game_clk;
 

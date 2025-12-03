@@ -20,7 +20,8 @@ module vga_controller #(
     output  logic                                   pixel_signal_G,         // gated with visible region
     output  logic                                   pixel_signal_B,         // gated with visible region
     output  logic                                   VGA_clk,              // internal/global pixel clock (PLLOUTGLOBALB)
-    output  logic                                   HSOSC_clk
+    output  logic                                   HSOSC_clk,
+    output  logic                                   LSOSC_clk
     // optional debug outs (safe to send to pins)
     // output logic                                   debug_pll_clk,        // PLLOUTCOREB (ok to PIO)
     // output logic                                   debug_HSOSC_clk,      // raw HSOSC tap (optional)
@@ -47,6 +48,7 @@ module vga_controller #(
         .clk_internal(pll_clk_internal),  // use this to clock your VGA logic
         .clk_external(pll_clk_external),      // use this if you want to drive a pin
         .clk_HSOSC   (HSOSC_clk),
+        .clk_LSOSC   (LSOSC_clk),
         .locked      (pll_lock)
     );
 
@@ -112,7 +114,7 @@ module vga_controller #(
     wire in_v_vis = (v_ctr < params.v_visible);
     wire video_on = in_h_vis & in_v_vis;
 
-    // â€œnextâ€ pixel addresses = current counters in active area (else 0)
+    // Ã¢â‚¬Å“nextÃ¢â‚¬Â pixel addresses = current counters in active area (else 0)
     always_comb begin
         pixel_x_target_next = in_h_vis ? h_ctr[$bits(pixel_x_target_next)-1:0] : '0;
         pixel_y_target_next = in_v_vis ? v_ctr[$bits(pixel_y_target_next)-1:0] : '0;

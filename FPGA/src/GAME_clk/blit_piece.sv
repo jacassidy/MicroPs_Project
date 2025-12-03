@@ -17,12 +17,14 @@ module blit_piece (
     // } game_state_t;
 
     always_comb begin : overlay_active_piece_comb
+
+        int bx, dx, dy, by;
         // Start from the base (locked) board
         out_state = base_state;
 
         // For each *column* of the 4x4 piece grid
-        for (int dx = 0; dx < 4; dx++) begin
-            int bx = active_piece_grid.x + dx;
+        for (dx = 0; dx < 4; dx++) begin
+            bx = active_piece_grid.x + dx;
 
             // If this column is on-screen horizontally
             if (bx >= 0 && bx < 10) begin
@@ -30,9 +32,9 @@ module blit_piece (
                 column_mask = '0;
 
                 // Build a 20-bit mask for this one board column
-                for (int dy = 0; dy < 4; dy++) begin
+                for (dy = 0; dy < 4; dy++) begin
                     if (active_piece_grid.piece[dx][dy]) begin
-                        int by = active_piece_grid.y + dy;
+                        by = active_piece_grid.y + dy;
 
                         // If this row is on-screen vertically
                         if (by >= 0 && by < 20) begin

@@ -124,8 +124,9 @@ module game_executioner #(
     end
 
     // One-cycle enables on rising edges (0 -> 1) of the slow "clocks"
-    wire game_clk_en  =  game_clk & ~game_clk_q;
+    wire game_clk_posedge  =  game_clk & ~game_clk_q;
     wire move_clk_en  =  move_clk & ~move_clk_q;
+    logic game_clk_posedge_stalled;
 
     // ------------------------------------------------------------
     // Single flop for active_piece.x in the clk domain
@@ -135,13 +136,17 @@ module game_executioner #(
             active_piece.x <= 4'd4;   // or new_piece.x, your call
             active_piece.rotation <= tetris_pkg::ROT_0;
             count <= '0;
-        end else if (game_clk_en && insert_new_piece) begin
+            game_clk_posedge_stalled <= '0;
+        end else if (game_clk_posedge & insert_new_piece) begin
+            game_clk_posedge_stalled <= 1'b1;
+        end else if (game_clk_posedge_stalled & game_clk_posedge) begin
             // Fires only on the cycle where game_clk goes 0->1
             // and insert_new_piece is high in that same cycle
             active_piece.x        <= new_piece.x;
             active_piece.rotation <= new_piece.rotation;
             count <= count + 16;
-        end else if (move_clk_en && move_valid) begin
+            game_clk_posedge_stalled <= 1'b0;
+        end else if (move_clk_en & move_valid) begin
             count <= count + 1;
             // Fires only on the cycle where stalled_move_clk goes 0->1
             // and move_valid is high
@@ -156,6 +161,7 @@ module game_executioner #(
                     default:             active_piece.rotation <= tetris_pkg::ROT_90;
                 endcase
             end
+            //else count <= count - 1;
             // other moves: no change
         end
     end
@@ -164,5 +170,8 @@ module game_executioner #(
 
     assign debug_singals_4[0] = {1'(move_valid), 1'(move == tetris_pkg::CMD_LEFT), 1'(move == tetris_pkg::CMD_RIGHT), 1'(move == tetris_pkg::CMD_ROTATE)};
     assign debug_singals_4[1] = count;
+
+    assign debug_singals_5[0] = {1'(game_clk_posedge_stalled), 1'(insert_new_piece), 1'(game_clk_posedge_stalled)};
+
 
 endmodule

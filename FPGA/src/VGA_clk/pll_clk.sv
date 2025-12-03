@@ -22,6 +22,7 @@ module pll_clk #(
     output logic clk_internal,  // OUTGLOBAL -> fabric/global
     output logic clk_external,  // OUTCORE   -> pad (debug)
     output logic clk_HSOSC,     // raw HSOSC for debug
+    output logic clk_LSOSC,
     output logic locked         // PLL lock
 );
 
@@ -33,6 +34,12 @@ module pll_clk #(
         .CLKHF   (clk_ref)
     );
     assign clk_HSOSC = clk_ref;
+
+    LSOSC u_lsosc (
+        .CLKLFPU (1'b1),
+        .CLKLFEN (1'b1),
+        .CLKLF   (clk_LSOSC)
+    );
 
     // 2) PLL
     wire pll_lock;

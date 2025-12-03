@@ -24,14 +24,16 @@ module piece_mask_generator #(
     import game_state_pkg::*;
 
     always_comb begin
+
+        int lx, wx, ly, wy;
         // Default everything to "off-screen" = 1
-        for (int lx = 0; lx < 6; lx++) begin
+        for (lx = 0; lx < 6; lx++) begin
             window[lx] = 6'b111111;
         end
 
         // For each *column* of the 6x6 window
-        for (int lx = 0; lx < 6; lx++) begin
-            int wx = piece_x + lx - 1;  // world x
+        for (lx = 0; lx < 6; lx++) begin
+            wx = piece_x + lx - 1;  // world x
 
             // If this column is horizontally in-bounds
             if (wx >= 0 && wx < BOARD_WIDTH) begin
@@ -39,8 +41,8 @@ module piece_mask_generator #(
                 col_bits = 6'b111111;   // default "off-screen" vertically too
 
                 // Now walk the 6 vertical positions for this column
-                for (int ly = 0; ly < 6; ly++) begin
-                    int wy = piece_y + ly - 1;  // world y
+                for (ly = 0; ly < 6; ly++) begin
+                    wy = piece_y + ly - 1;  // world y
 
                     // If vertically on-screen, sample from state
                     if (wy >= 0 && wy < BOARD_HEIGHT) begin
