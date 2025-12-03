@@ -44,6 +44,8 @@ module game_executioner #(
 
     logic [7:0] count;
 
+    logic GAME_OVER;
+
     logic floating_piece;
     logic active_piece_toutching_bottom;
     logic active_piece_toutching_left;
@@ -151,9 +153,22 @@ module game_executioner #(
                     end
                 end
             end
+            GAME_OVER = 1'b0;
         end else begin
              // 3) Default: just lock the board as-is, no clear
-            fixed_state_next      = (active_piece_toutching_bottom & ~clearing_line_next) ? GAME_state : GAME_fixed_state;
+             if (active_piece_toutching_bottom & ~clearing_line_next) begin
+                
+                if (GAME_state.screen == GAME_fixed_state.screen) begin
+                    GAME_OVER = 1'b1;
+                    fixed_state_next.screen      =  game_state_pkg::blank_game_state.screen;
+                end else begin
+                    GAME_OVER = 1'b0;
+                    fixed_state_next.screen      =  GAME_state.screen;
+                end
+             end else begin
+                fixed_state_next.screen      =  GAME_fixed_state.screen;
+                GAME_OVER = 1'b0;
+             end
         end
     end
 
@@ -290,6 +305,7 @@ module game_executioner #(
     assign debug_singals_4[0] = no_piece;
     assign debug_singals_4[1] = clearing_line;
     assign debug_singals_5[0] = clearing_line_next;
+    assign debug_singals_5[1] = GAME_OVER;
     //debug_singals_5
 
 
