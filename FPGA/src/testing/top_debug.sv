@@ -7,9 +7,11 @@
 `define COLORS 3
 
 module top_debug #(
-        parameter vga_pkg::vga_params_t params = vga_pkg::VGA_640x480_60,
-        parameter int TELEMETRY_VALUE_WIDTH             = 8,
-        parameter int TELEMETRY_BASE                    = 2
+        parameter vga_pkg::vga_params_t params                          = vga_pkg::VGA_640x480_60,
+        parameter int                   TELEMETRY_NUM_SIGNALS           = 2,
+        parameter int                   GLOBAL_TELEMETRY_NUM_SIGNALS    = 8,
+        parameter int                   TELEMETRY_VALUE_WIDTH           = 8,
+        parameter int                   TELEMETRY_BASE                  = 2
     )(
         input   logic       reset_n,
         output  logic       h_sync,
@@ -26,7 +28,7 @@ module top_debug #(
         input   logic       external_clk_raw,
         output  logic       debug_led
     );
-
+	
     // DEBUG
     logic [5:0]                         debug_window_0 [`COLORS][5:0];
     logic [5:0]                         debug_window_1 [`COLORS][5:0];
@@ -34,7 +36,7 @@ module top_debug #(
     logic [5:0]                         debug_window_3 [`COLORS][5:0];
     logic [5:0]                         debug_window_4 [`COLORS][5:0];
     logic [5:0]                         debug_window_5 [`COLORS][5:0];
-    // 6 sets of debug signals (2Ãƒâ€”8-bit each)
+    // 6 sets of debug signals (2ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â8-bit each)
     logic [7:0]                         debug_singals_0 [2];
     logic [7:0]                         debug_singals_1 [2];
     logic [7:0]                         debug_singals_2 [2];
@@ -49,12 +51,13 @@ module top_debug #(
 
     logic easy_clk;
 
-    logic [TELEMETRY_VALUE_WIDTH-1:0]    telemetry_values [2];
+    logic [TELEMETRY_VALUE_WIDTH-1:0]   main_telemetry_values [TELEMETRY_NUM_SIGNALS];
+    logic [TELEMETRY_VALUE_WIDTH-1:0]   telemetry_values      [GLOBAL_TELEMETRY_NUM_SIGNALS];
 
     logic game_clk;
     
     // SPI signals
-    logic invalidate_spi_data, spi_data_new;
+    logic invalidate_spi_data, spi_data_new, spi_data_valid;
     logic spi_data_new_stalled;
 
     // VGA Signals
@@ -77,8 +80,8 @@ module top_debug #(
 
     ////----MODULES----////
 
-    assign telemetry_values[0] = clk_count;
-    assign telemetry_values[1] = spi_data;
+    assign main_telemetry_values[0] = clk_count;
+    assign main_telemetry_values[1] = spi_data;
 
     vga_controller #(
         .params(params)
@@ -106,12 +109,13 @@ module top_debug #(
 
     game_decoder #(
             .params(params), 
-            .TELEMETRY_NUM_SIGNALS(2),    
+            .TELEMETRY_NUM_SIGNALS(2),  
+            .GLOBAL_TELEMETRY_NUM_SIGNALS(GLOBAL_TELEMETRY_NUM_SIGNALS),  
             .TELEMETRY_VALUE_WIDTH(TELEMETRY_VALUE_WIDTH),
             .TELEMETRY_BASE(TELEMETRY_BASE)
         ) Game_Decoder(
             .VGA_new_frame_ready, .VGA_frame, .pixel_x_target_next, .pixel_y_target_next, 
-            .pixel_value_next_R, .pixel_value_next_G, .pixel_value_next_B, .v_sync, .telemetry_values,
+            .pixel_value_next_R, .pixel_value_next_G, .pixel_value_next_B, .v_sync, .main_telemetry_values,
             .debug_window_0,
             .debug_window_1,
             .debug_window_2,
@@ -119,13 +123,15 @@ module top_debug #(
             .debug_window_4,
             .debug_window_5,
 
-            // 6 sets of debug signals (2Ã—8-bit each)
+            // 6 sets of debug signals (2ÃƒÆ’Ã¢â‚¬â€8-bit each)
             .debug_singals_0,
             .debug_singals_1,
             .debug_singals_2,
             .debug_singals_3,
             .debug_singals_4,
-            .debug_singals_5
+            .debug_singals_5,
+
+            .telemetry_values
         );
 
     //game_encoder Game_Encoder(.GAME_new_frame_ready(), .GAME_next_frame, .GAME_frame_select(spi_data[3:0]));
@@ -147,7 +153,8 @@ module top_debug #(
     game_executioner #(
             .TELEMETRY_NUM_SIGNALS(2),    
             .TELEMETRY_VALUE_WIDTH(TELEMETRY_VALUE_WIDTH),
-            .TELEMETRY_BASE(TELEMETRY_BASE)
+            .TELEMETRY_BASE(TELEMETRY_BASE),
+            .GLOBAL_TELEMETRY_NUM_SIGNALS(GLOBAL_TELEMETRY_NUM_SIGNALS)
         )Game_Executioner(
             .reset(~reset_n), 
             .move_clk(spi_data_new_stalled), 
@@ -164,30 +171,34 @@ module top_debug #(
             .debug_window_4,
             .debug_window_5,
 
-            // 6 sets of debug signals (2Ã—8-bit each)
+            // 6 sets of debug signals (2ÃƒÆ’Ã¢â‚¬â€8-bit each)
             .debug_singals_0,
             .debug_singals_1,
             .debug_singals_2,
             .debug_singals_3,
             .debug_singals_4,
-            .debug_singals_5
+            .debug_singals_5,
+            .telemetry_values
             );
 
-    spi SPI(.reset(~reset_n), .clk(HSOSC_clk), .sck, .sdi, .sdo, .ce, .clear(invalidate_spi_data), .data(spi_data), .data_valid(spi_data_new));
+    spi SPI(.reset(~reset_n), .clk(HSOSC_clk), .sck, .sdi, .sdo, .ce, .clear(invalidate_spi_data), .data(spi_data), .data_valid(spi_data_valid));
+
+    assign spi_data_new = spi_data_valid; //& ~(^spi_data);
 
     synchronizer SPI_Syncstalldata(.clk(easy_clk), .raw_input(spi_data_new), .synchronized_value(spi_data_new_stalled));
     synchronizer SPI_Invalidator(.clk(easy_clk), .raw_input(spi_data_new_stalled), .synchronized_value(invalidate_spi_data));
     
     // synchronize value
-    synchronizer Synchronizer (HSOSC_clk, external_clk_raw, synchronized_value);
+    synchronizer Synchronizer (LSOSC_clk, external_clk_raw, synchronized_value);
 
     // debounce individual switch
-    switch_debouncer #(.debounce_delay(100000)) Switch_Debouncer(HSOSC_clk, ~reset_n, synchronized_value, external_clk_sync_debounce);
+	assign external_clk_sync_debounce = synchronized_value;
+    //switch_debouncer #(.debounce_delay(100)) Switch_Debouncer(LSOSC_clk, ~reset_n, synchronized_value, external_clk_sync_debounce);
 
     // Once new data has come it and chip enable goes low then assert new frame ready
     assign GAME_new_frame_ready = 1'b1;
 
-    clock_divider #(.div_count(30000000)) Clock_Divider(.clk(HSOSC_clk), .reset(~reset_n), .clk_divided);
+    clock_divider #(.div_count(4096)) Clock_Divider(.clk(LSOSC_clk), .reset(~reset_n), .clk_divided);
 
     assign easy_clk = LSOSC_clk;
 
@@ -196,9 +207,9 @@ module top_debug #(
         else            clk_count <= clk_count + 1;
     end
 
-    // assign game_clk = external_clk_sync_debounce;
+    assign game_clk = external_clk_sync_debounce;
     //assign game_clk = 1'b1;
-    assign game_clk = clk_divided;
+    // assign game_clk = clk_divided;
 
     assign debug_led = game_clk;
 

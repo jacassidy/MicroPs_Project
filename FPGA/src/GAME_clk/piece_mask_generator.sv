@@ -33,7 +33,7 @@ module piece_mask_generator #(
 
         // For each *column* of the 6x6 window
         for (lx = 0; lx < 6; lx++) begin
-            wx = piece_x + lx - 1;  // world x
+            wx = piece_x + lx - 1 - 4;  // world x
 
             // If this column is horizontally in-bounds
             if (wx >= 0 && wx < BOARD_WIDTH) begin
@@ -42,19 +42,21 @@ module piece_mask_generator #(
 
                 // Now walk the 6 vertical positions for this column
                 for (ly = 0; ly < 6; ly++) begin
-                    wy = piece_y + ly - 1;  // world y
+                    wy = piece_y + ly - 1 - 4;  // world y
 
                     // If vertically on-screen, sample from state
                     if (wy >= 0 && wy < BOARD_HEIGHT) begin
                         // state.screen[wx] is a BOARD_HEIGHT-bit column
                         col_bits[ly] = state.screen[wx][wy];
+                    end else if (wy < 0) begin
+                        col_bits[ly] = 1'b0;
                     end
                     // else: leave as 1 (off-screen)
-                end
+                end 
 
                 // Assign this 6-bit column into the window
                 window[lx] = col_bits;
-            end
+            end 
             // else: window[lx] already 6'b111111 from the default pass
         end
     end

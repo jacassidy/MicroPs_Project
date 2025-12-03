@@ -41,7 +41,7 @@ package tetris_pkg;
     t.piece_type    = piece;
     t.rotation      = rotation;
     t.y             = 0;
-    t.x             = 3;
+    t.x             = 7;
 
     return t;
   endfunction
@@ -64,8 +64,8 @@ package tetris_pkg;
   typedef enum logic [1:0] {
     CMD_LEFT      = 2'd2,
     CMD_RIGHT     = 2'd3,
-    CMD_ROTATE    = 2'd0,
-    CMD_SOFT_DROP = 2'd1
+    CMD_ROTATE    = 2'd1,
+    CMD_SOFT_DROP = 2'd0
   } command_t;
 
 endpackage : tetris_pkg

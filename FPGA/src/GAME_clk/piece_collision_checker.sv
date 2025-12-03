@@ -41,7 +41,7 @@ module piece_collision_checker #(
         output  logic [5:0]                         debug_window_4 [`COLORS][5:0],
         output  logic [5:0]                         debug_window_5 [`COLORS][5:0],
 
-        // 6 sets of debug signals (2ÃƒÆ’Ã¢â‚¬â€8-bit each)
+        // 6 sets of debug signals (2ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â8-bit each)
         output  logic [7:0]                         debug_singals_0 [2],
         output  logic [7:0]                         debug_singals_1 [2],
         output  logic [7:0]                         debug_singals_2 [2],
@@ -95,7 +95,7 @@ module piece_collision_checker #(
             piece_mask_down[y]  = '0;
         end
 
-        // Place 4Ã—4 piece in the middle of the 6Ã—6:
+        // Place 4ÃƒÆ’Ã¢â‚¬â€4 piece in the middle of the 6ÃƒÆ’Ã¢â‚¬â€6:
         // piece_grid[0..3][0..3] -> piece_mask[1..4][1..4]
         for (int y = 0; y < 4; y++) begin
             for (int x = 0; x < 4; x++) begin
