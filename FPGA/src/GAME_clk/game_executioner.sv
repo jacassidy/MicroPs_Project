@@ -305,7 +305,7 @@ module game_executioner #(
     assign debug_singals_4[0] = no_piece;
     assign debug_singals_4[1] = clearing_line;
     assign debug_singals_5[0] = clearing_line_next;
-    assign debug_singals_5[1] = GAME_OVER;
+    assign debug_singals_5[1] = active_piece.y;
     //debug_singals_5
 
 
