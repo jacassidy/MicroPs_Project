@@ -47,12 +47,15 @@ module top_debug #(
     logic [7:0] spi_data;
     logic clk_divided;
 
+    logic easy_clk;
+
     logic [TELEMETRY_VALUE_WIDTH-1:0]    telemetry_values [2];
 
     logic game_clk;
     
     // SPI signals
-    logic invalidate_spi_data, spi_data_valid;
+    logic invalidate_spi_data, spi_data_new;
+    logic spi_data_new_stalled;
 
     // VGA Signals
     logic   HSOSC_clk, VGA_clk;
@@ -146,8 +149,8 @@ module top_debug #(
             .TELEMETRY_BASE(TELEMETRY_BASE)
         )Game_Executioner(
             .reset(~reset_n), 
-            .move_clk(spi_data_valid), 
-            .clk(HSOSC_clk),
+            .move_clk(spi_data_new_stalled), 
+            .clk(easy_clk),
             .game_clk, 
             .move(tetris_pkg::command_t'(spi_data[1:0])), 
             .move_valid(spi_data[5]), 
@@ -169,9 +172,10 @@ module top_debug #(
             .debug_singals_5
             );
 
-    spi SPI(.reset(~reset_n), .clk(HSOSC_clk), .sck, .sdi, .sdo, .ce, .clear(invalidate_spi_data), .data(spi_data), .data_valid(spi_data_valid));
+    spi SPI(.reset(~reset_n), .clk(HSOSC_clk), .sck, .sdi, .sdo, .ce, .clear(invalidate_spi_data), .data(spi_data), .data_valid(spi_data_new));
 
-    synchronizer SPI_Invalidator(.clk(HSOSC_clk), .raw_input(spi_data_valid), .synchronized_value(invalidate_spi_data));
+    synchronizer SPI_Syncstalldata(.clk(easy_clk), .raw_input(spi_data_new), .synchronized_value(spi_data_new_stalled));
+    synchronizer SPI_Invalidator(.clk(easy_clk), .raw_input(spi_data_new_stalled), .synchronized_value(invalidate_spi_data));
     
     // synchronize value
     synchronizer Synchronizer (HSOSC_clk, external_clk_raw, synchronized_value);
@@ -183,6 +187,8 @@ module top_debug #(
     assign GAME_new_frame_ready = 1'b1;
 
     clock_divider #(.div_count(30000000)) Clock_Divider(.clk(HSOSC_clk), .reset(~reset_n), .clk_divided);
+
+    clock_divider #(.div_count(1000)) Clock_Divider2(.clk(HSOSC_clk), .reset(~reset_n), .clk_divided(easy_clk));
 
     always_ff @(posedge game_clk) begin
         if (~reset_n)   clk_count <= 0;

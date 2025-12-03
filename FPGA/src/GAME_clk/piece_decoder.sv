@@ -23,24 +23,31 @@ module piece_decoder (
       '{1'b0, 1'b0, 1'b0, 1'b0}  // row 3
   };
 
+  // localparam piece_matrix_t I_BASE = '{
+  //     '{1'b1, 1'b1, 1'b1, 1'b1}, // row 0
+  //     '{1'b1, 1'b1, 1'b1, 1'b1}, // row 1
+  //     '{1'b1, 1'b1, 1'b1, 1'b1}, // row 2
+  //     '{1'b1, 1'b1, 1'b1, 1'b1}  // row 3
+  // };
+
   localparam piece_matrix_t O_BASE = '{
-      '{1'b0, 1'b1, 1'b1, 1'b0},
-      '{1'b0, 1'b1, 1'b1, 1'b0},
       '{1'b0, 1'b0, 1'b0, 1'b0},
+      '{1'b0, 1'b1, 1'b1, 1'b0},
+      '{1'b0, 1'b1, 1'b1, 1'b0},
       '{1'b0, 1'b0, 1'b0, 1'b0}
   };
 
   localparam piece_matrix_t T_BASE = '{
+      '{1'b0, 1'b0, 1'b0, 1'b0},
       '{1'b0, 1'b1, 1'b0, 1'b0},
       '{1'b1, 1'b1, 1'b1, 1'b0},
-      '{1'b0, 1'b0, 1'b0, 1'b0},
       '{1'b0, 1'b0, 1'b0, 1'b0}
   };
 
   localparam piece_matrix_t L_BASE = '{
-      '{1'b1, 1'b0, 1'b0, 1'b0},
-      '{1'b1, 1'b0, 1'b0, 1'b0},
-      '{1'b1, 1'b1, 1'b0, 1'b0},
+      '{1'b0, 1'b1, 1'b0, 1'b0},
+      '{1'b0, 1'b1, 1'b0, 1'b0},
+      '{1'b0, 1'b1, 1'b1, 1'b0},
       '{1'b0, 1'b0, 1'b0, 1'b0}
   };
 
@@ -52,16 +59,16 @@ module piece_decoder (
   };
 
   localparam piece_matrix_t S_BASE = '{
+      '{1'b0, 1'b0, 1'b0, 1'b0},
       '{1'b0, 1'b1, 1'b1, 1'b0},
       '{1'b1, 1'b1, 1'b0, 1'b0},
-      '{1'b0, 1'b0, 1'b0, 1'b0},
       '{1'b0, 1'b0, 1'b0, 1'b0}
   };
 
   localparam piece_matrix_t Z_BASE = '{
+      '{1'b0, 1'b0, 1'b0, 1'b0},
       '{1'b1, 1'b1, 1'b0, 1'b0},
       '{1'b0, 1'b1, 1'b1, 1'b0},
-      '{1'b0, 1'b0, 1'b0, 1'b0},
       '{1'b0, 1'b0, 1'b0, 1'b0}
   };
 
@@ -115,7 +122,7 @@ module piece_decoder (
           // 180Â°: (y,x) <- (3-y,3-x)
           ROT_180: rotated[x][y] = base_matrix[3-x][3-y];
           // 270Â° clockwise: (y,x) <- (x,3-y)
-          ROT_270: rotated[x][y] = base_matrix[y][3-x];
+          ROT_270: rotated[x][y] = base_matrix[3-y][x];
           default: rotated[x][y] = base_matrix[x][y];
         endcase
       end

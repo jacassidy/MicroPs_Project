@@ -18,27 +18,44 @@ module piece_mask_generator #(
     input  logic [$clog2(BOARD_HEIGHT)-1:0]     piece_y,
 
     // window[x][y], 0..5 in each dimension
+    // window[lx][ly]: 6 columns, each 6 bits tall
     output logic [5:0]                          window [5:0]
 );
+    import game_state_pkg::*;
 
-    // Combinational generation of the 6x6 window
     always_comb begin
-        int wx, wy;
-        for (int lx = 0; lx < 6; lx++) begin           // local x (0..5)
-            for (int ly = 0; ly < 6; ly++) begin       // local y (0..5)
-                // World coordinates: start at (piece_x-1, piece_y-1)
-                wx = piece_x + lx - 1;
-                wy = piece_y + ly - 1;
+        // Default everything to "off-screen" = 1
+        for (int lx = 0; lx < 6; lx++) begin
+            window[lx] = 6'b111111;
+        end
 
-                // If off-screen, force to 1, else sample from state.screen
-                if (wx < 0 || wy < 0 ||
-                    wx >= BOARD_WIDTH || wy >= BOARD_HEIGHT) begin
-                    window[lx][ly] = 1'b1;
-                end else begin
-                    window[lx][ly] = state.screen[wx][wy];
+        // For each *column* of the 6x6 window
+        for (int lx = 0; lx < 6; lx++) begin
+            int wx = piece_x + lx - 1;  // world x
+
+            // If this column is horizontally in-bounds
+            if (wx >= 0 && wx < BOARD_WIDTH) begin
+                logic [5:0] col_bits;
+                col_bits = 6'b111111;   // default "off-screen" vertically too
+
+                // Now walk the 6 vertical positions for this column
+                for (int ly = 0; ly < 6; ly++) begin
+                    int wy = piece_y + ly - 1;  // world y
+
+                    // If vertically on-screen, sample from state
+                    if (wy >= 0 && wy < BOARD_HEIGHT) begin
+                        // state.screen[wx] is a BOARD_HEIGHT-bit column
+                        col_bits[ly] = state.screen[wx][wy];
+                    end
+                    // else: leave as 1 (off-screen)
                 end
+
+                // Assign this 6-bit column into the window
+                window[lx] = col_bits;
             end
+            // else: window[lx] already 6'b111111 from the default pass
         end
     end
 
 endmodule
+

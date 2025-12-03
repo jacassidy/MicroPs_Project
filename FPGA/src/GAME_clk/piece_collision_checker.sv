@@ -31,6 +31,7 @@ module piece_collision_checker #(
         output  logic                               left_collision,
         output  logic                               right_collision,
         output  logic                               down_collision,
+        output  logic                               rotation_collision,
         
         // 6 debug windows, each 3-color 6x6
         output  logic [5:0]                         debug_window_0 [`COLORS][5:0],
@@ -40,7 +41,7 @@ module piece_collision_checker #(
         output  logic [5:0]                         debug_window_4 [`COLORS][5:0],
         output  logic [5:0]                         debug_window_5 [`COLORS][5:0],
 
-        // 6 sets of debug signals (2Ãƒâ€”8-bit each)
+        // 6 sets of debug signals (2ÃƒÆ’Ã¢â‚¬â€8-bit each)
         output  logic [7:0]                         debug_singals_0 [2],
         output  logic [7:0]                         debug_singals_1 [2],
         output  logic [7:0]                         debug_singals_2 [2],
@@ -56,6 +57,7 @@ module piece_collision_checker #(
     logic [5:0] piece_mask_left  [5:0];
     logic [5:0] piece_mask_right [5:0];
     logic [5:0] piece_mask_down  [5:0];
+    logic [5:0] piece_mask_rotate[5:0];
 
     assign blank_mask = '{default: 6'b0};;
 
@@ -68,14 +70,18 @@ module piece_collision_checker #(
     assign debug_window_0[1]       = board_mask;
     assign debug_window_1[1]       = board_mask;
     assign debug_window_2[1]       = board_mask;
+    assign debug_window_3[1]       = board_mask;
 
     block_pixels bp1(debug_window_0[2], no_piece ? blank_mask : piece_mask_down,  piece_mask);
     block_pixels bp2(debug_window_1[2], no_piece ? blank_mask : piece_mask_left,  piece_mask);
     block_pixels bp3(debug_window_2[2], no_piece ? blank_mask : piece_mask_right, piece_mask);
 
+    assign debug_window_3[2]  	   = piece_mask_rotate;
+
     assign debug_singals_0[0]      = down_collision;
     assign debug_singals_1[0]      = left_collision;
     assign debug_singals_2[0]      = right_collision;
+    assign debug_singals_3[0]      = rotation_collision;
 
     // ------------------------------------------------------------------------
     // Build piece_mask and compute collisions with explicit (x,y) shifts
@@ -89,7 +95,7 @@ module piece_collision_checker #(
             piece_mask_down[y]  = '0;
         end
 
-        // Place 4×4 piece in the middle of the 6×6:
+        // Place 4Ã—4 piece in the middle of the 6Ã—6:
         // piece_grid[0..3][0..3] -> piece_mask[1..4][1..4]
         for (int y = 0; y < 4; y++) begin
             for (int x = 0; x < 4; x++) begin
@@ -118,6 +124,7 @@ module piece_collision_checker #(
                     if (y < 5)
                         piece_mask_down[x][y+1] = 1'b1;
                 end
+                piece_mask_rotate[x][y] = piece_mask[y][5-x];
             end
         end
 
@@ -125,11 +132,13 @@ module piece_collision_checker #(
         left_collision  = 1'b0;
         right_collision = 1'b0;
         down_collision  = 1'b0;
+        rotation_collision = 1'b0;
 
         for (int y = 0; y < 6; y++) begin
             if (|(piece_mask_left[y]  & board_mask[y])) left_collision  = 1'b1;
             if (|(piece_mask_right[y] & board_mask[y])) right_collision = 1'b1;
             if (|(piece_mask_down[y]  & board_mask[y])) down_collision  = 1'b1;
+            if (|(piece_mask_rotate[y]  & board_mask[y])) rotation_collision  = 1'b1;
         end
 
         down_collision &= ~no_piece;
