@@ -114,7 +114,7 @@ module game_executioner #(
         for (int y = 0; y < BOARD_HEIGHT; y++) begin
             full = 1'b1;
             for (int x = 0; x < BOARD_WIDTH; x++) begin
-                full &= GAME_state.screen[x][y];
+                full &= GAME_fixed_state.screen[x][y];
             end
             row_full[y] = full;
         end
@@ -129,15 +129,14 @@ module game_executioner #(
             end
         end
 
-        // 3) Default: just lock the board as-is, no clear
-        fixed_state_next      = GAME_state;
         clearing_line_next    = 1'b0;
-
         // 4) If we found a full row, clear *one* line (bottom-most) and
         //    shift everything above it down by 1. Rows below are unchanged.
         if (any_full_row) begin
             clearing_line_next = 1'b1;
+        end
 
+        if (clearing_line) begin
             for (int y = 0; y < BOARD_HEIGHT; y++) begin
                 for (int x = 0; x < BOARD_WIDTH; x++) begin
                     if (y == 0 && y <= clear_y) begin
@@ -145,13 +144,16 @@ module game_executioner #(
                         fixed_state_next.screen[x][y] = 1'b0;
                     end else if (y <= clear_y) begin
                         // Rows 1..clear_y each take the row directly above
-                        fixed_state_next.screen[x][y] = GAME_state.screen[x][y-1];
+                        fixed_state_next.screen[x][y] = GAME_fixed_state.screen[x][y-1];
                     end else begin
                         // Rows below the cleared line (y > clear_y) stay the same
-                        fixed_state_next.screen[x][y] = GAME_state.screen[x][y];
+                        fixed_state_next.screen[x][y] = GAME_fixed_state.screen[x][y];
                     end
                 end
             end
+        end else begin
+             // 3) Default: just lock the board as-is, no clear
+            fixed_state_next      = (active_piece_toutching_bottom & ~clearing_line_next) ? GAME_state : GAME_fixed_state;
         end
     end
 
@@ -183,13 +185,10 @@ module game_executioner #(
             GAME_fixed_state.screen <= game_state_pkg::blank_game_state.screen;
             clearing_line           <= 1'b0;
         end else if (game_clk_rise) begin
-            if (active_piece_toutching_bottom) begin
+            // if (clearing_line | ) begin
                 GAME_fixed_state.screen <= fixed_state_next.screen;
-                clearing_line           <= clearing_line_next;
-            end else begin
-                // no new piece lock this cycle => no clear pulse
-                clearing_line           <= 1'b0;
-            end
+            // end 
+            clearing_line           <= clearing_line_next;
         end
     end
     // always_ff @(posedge game_clk) begin
