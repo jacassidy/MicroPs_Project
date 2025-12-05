@@ -1,120 +1,84 @@
-MicroPs Project — FPGA Tetris System
 
-This repository contains the complete hardware and firmware implementation of our FPGA-based Tetris system, created for the Microprocessors final project. The design integrates a custom FPGA video pipeline, a microcontroller interface, hardware PLLs, SPI-based communication, and game logic implemented entirely in SystemVerilog.
+## Project Overview
 
-Repository Structure
-MicroPs_Project/
-├── fpga/                 # SystemVerilog source files for FPGA design
-│   ├── top_debug.sv      # Top-level module for the FPGA system
-│   ├── vga/              # VGA timing, pixel pipeline, rendering modules
-│   ├── tetris/           # Game logic, piece rotation, board updates
-│   ├── spi/              # SPI interface for MCU-FPGA communication
-│   ├── pll/              # Hardware PLL modules and clocking resources
-│   └── testbenches/      # Testbenches for major modules
-│
-├── mcu/                  # Microcontroller firmware for interfacing with FPGA
-│   ├── src/              # Core MCU source code
-│   └── include/          # Header files used by the MCU project
-│
-├── docs/                 # Documentation, diagrams, Quarto pages, project report
-│   └── portfolio.qmd     # Final project website content
-│
-├── assets/               # Images, diagrams, block schematics used in docs
-│
-└── README.md             # This file
+This system implements a complete Tetris game entirely in hardware using:
 
-Project Overview
+- Custom VGA pipeline generating 640×480 @ 60 Hz  
+- Hardware PLL to generate the pixel clock  
+- Tetris game logic written in SystemVerilog  
+- Active piece rotation, collision detection, and line clearing  
+- SPI communication between MCU and FPGA  
+- PS/2 keyboard input for player controls  
+- On-screen debug and telemetry overlay  
+- Deterministic hardware random generator sourced from the MCU  
 
-The system implements a complete hardware Tetris game with:
+## FPGA Design (SystemVerilog)
 
-Custom VGA pipeline generating 640×480 @ 60 Hz
+Located in `fpga/`.
 
-Hardware PLL to produce the precise pixel clock
+Key components include:
 
-Tetris game logic implemented in pure SystemVerilog (board state, piece movement, collision, rotation, line clearing)
+- VGA timing and pixel pipeline  
+- Game board state machine  
+- Piece rotation and movement logic  
+- Collision detection and bottom-touch logic  
+- Line-clear mechanism  
+- Active piece blitter  
+- PLL for video clock  
+- SPI receiver for MCU commands  
+- Telemetry renderer for debugging
 
-SPI-based communication between MCU and FPGA
+## Microcontroller Firmware
 
-PS/2 keyboard input processed by the FPGA for player controls
+Located in `mcu/`.
 
-Deterministic hardware random generator sourced from the MCU
+The MCU:
 
-Debug and telemetry modules for real-time visualization of internal FPGA state
+- Sends random numbers and control updates over SPI  
+- Handles initialization logic  
+- Performs cleanup and validation on outgoing data  
+- Interfaces with physical I/O peripherals  
 
-Key Components
-FPGA System (SystemVerilog)
+## Documentation
 
-Located in fpga/.
+Located in `docs/`.
 
-VGA modules handle timing, visible-region generation, and pixel output.
+- `portfolio.qmd` contains the Quarto report/website for the project.  
+- Diagrams and reference images are stored in `assets/`.
 
-Tetris logic controls piece spawning, rotation, collision detection, and line clearing.
+## How to Build and Run
 
-Active piece blitting overlays the falling piece into the board matrix.
+### FPGA
 
-PLL module generates the exact pixel clock required for stable VGA output.
+1. Open the project in **Lattice Radiant**.  
+2. Synthesize and implement the design.  
+3. Program the iCE40 UltraPlus FPGA.  
+4. Connect:
+   - VGA monitor  
+   - PS/2 keyboard  
+   - MCU SPI lines  
+5. Run the MCU firmware.
 
-SPI interface receives random numbers and control updates from the MCU.
+### MCU
 
-Telemetry renderer displays debug data on-screen for development and testing.
+1. Open the `mcu/` folder in your preferred embedded environment.  
+2. Build and flash firmware to the microcontroller board.  
+3. Connect SPI signals (SCK, SDI, SDO, CE) to FPGA.
 
-Microcontroller (MCU) Firmware
+## Requirements
 
-Located in mcu/.
+- Lattice iCE40 UltraPlus FPGA  
+- Compatible MCU (HMC MicroPs course board)  
+- VGA monitor  
+- PS/2 keyboard  
+- Lattice Radiant toolchain  
+- Standard lab hardware equipment  
 
-Sends random values and control signals to FPGA.
+## Contributors
 
-Receives game state or debug info when needed.
+- **James Kaden Cassidy**  
+- *(Add additional team members and links as needed)*
 
-Performs final cleanup, error checking, and data packaging.
+## License
 
-Documentation
-
-Located in docs/.
-
-portfolio.qmd is the Quarto webpage describing the system architecture, bill of materials, FPGA/MCU design summaries, results, references, and acknowledgements.
-
-How to Build and Run
-FPGA
-
-Open the project using Lattice Radiant or the provided build files.
-
-Synthesize the design.
-
-Program the iCE40 UltraPlus FPGA board.
-
-Connect VGA display and PS/2 keyboard.
-
-Run MCU firmware to send startup data.
-
-MCU
-
-Open mcu/ in your preferred embedded environment.
-
-Compile and flash the code to the microcontroller board.
-
-Connect SPI pins to the FPGA.
-
-Requirements
-
-Lattice iCE40 UltraPlus FPGA
-
-Compatible MCU (HMC MicroPs course board)
-
-VGA display
-
-PS/2 keyboard
-
-Radiant toolchain
-
-Standard hardware lab peripherals
-
-Contributors
-
-James Kaden Cassidy
-
-Team Members: (Add remaining team names and bios here)
-
-License
-
-This project is for educational use within the Microprocessors course at Harvey Mudd College. Redistribution should include proper credit.
+This project is for educational use. Redistribution should include appropriate credit.
